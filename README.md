@@ -16,7 +16,7 @@ To turn an image into a room, write *room* in the first line of the gmnotes. As 
 
 A room has four sides: t(op), b(ottom), l(eft), and r(ight).
 
-Each side can have one of four types: wall (which blocks LoS), doorClosed(which blocks LoS and has a closed door image), doorOpen (which blocks LoS for the wall except where the door is and has an open door image), and empty (which doesn't block LoS). If a side isn't specified, it defaults to empty.
+Each side can have one of four types: wall (which blocks LoS), doorClosed (which blocks LoS and has a closed door image), doorOpen (which blocks LoS for the wall except where the door is and has an open door image), and empty (which doesn't block LoS). If a side isn't specified, it defaults to empty.
 
 To create a side, add a line to the room's gmnotes like this: *<side>*<type>*. Make sure that the information is on its own line and that there is an empty line at the bottom of the gmnotes. For example, gmnotes could look like this when first creating sides on a room:
 *room*
