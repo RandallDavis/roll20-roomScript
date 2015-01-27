@@ -14,7 +14,7 @@ Any image can be made into a room that is automatically managed. Setting rooms u
 
 To turn an image into a room, write *room* in the first line of the gmnotes. As soon as the image becomes a room, it is pushed to the Maps layer and is from then on managed by the API.
 
-A room has four sides: t(op), b(ottom, l(eft), and r(ight).
+A room has four sides: t(op), b(ottom), l(eft), and r(ight).
 
 Each side can have one of four types: wall (which blocks LoS), doorClosed(which blocks LoS and has a closed door image), doorOpen (which blocks LoS for the wall except where the door is and has an open door image), and empty (which doesn't block LoS). If a side isn't specified, it defaults to empty.
 
