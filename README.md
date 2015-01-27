@@ -30,7 +30,7 @@ Rooms can be moved, rotated, and resized. The API will make sure that everything
 
 #Feeding the room door images
 
-When you create sides with doors, the API will complain in chat if it doesn't have door images. Each side that is a doorClosed or doorOpen will need images for both open and closed doors. To give the room the door images it needs, just drag an open door image and a closed door image (both need to be predefined pictures that it knows to look for) and change the room in any way. It will capture the door images and stop complaining.
+When you create sides with doors, the API will complain in chat if it doesn't have door images. Each side that is a doorClosed or doorOpen will need images for both open and closed doors. To give the room the door images it needs, just drag an open door image and a closed door image (both need to be predefined pictures that it knows to look for) onto the page and change the room in any way. It will capture the door images and stop complaining.
 
 To open or close a door, just move or rotate the door you want to toggle.
 
