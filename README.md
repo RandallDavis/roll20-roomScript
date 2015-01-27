@@ -1,7 +1,7 @@
 # roll20-roomScript
 Script using Roll20's API to automatically control dynamic lighting around a room.
 
-With this, you can import any image and declare it a "room". Rooms can be quickly customized to draw dynamic lighting around them, including doors that can be toggled. A closed door blocks line of sight - an open door lets light of sight through.
+With this, you can import any image and declare it a "room". Rooms can be quickly customized to draw dynamic lighting around them, including doors that can be toggled. A closed door blocks line of sight - an open door lets line of sight through but not through the surrounding walls.
 
 Some of this was inspired by other scripts (credited in the script itself), but I streamlined things for this particular use case.
 
