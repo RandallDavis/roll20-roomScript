@@ -5,25 +5,24 @@ With this, you can import any image and declare it a "room". Rooms can be quickl
 
 Some of this was inspired by other scripts (credited in the script itself), but I streamlined things for this particular use case.
 
-Feedback is welcome!
 
 
 #Creating a room
 
 Any image can be made into a room that is automatically managed. Setting rooms up requires some simple meta-coding.
 
-To turn an image into a room, write *room* in the first line of the gmnotes. As soon as the image becomes a room, it is pushed to the Maps layer and is from then on managed by the API.
+To turn an image into a room, write __\*room\*__ in the first line of the gmnotes. As soon as the image becomes a room, it is pushed to the Maps layer and is from then on managed by the API.
 
-A room has four sides: t(op), b(ottom), l(eft), and r(ight).
+A room has four sides: __t__(op), __b__(ottom), __l__(eft), and __r__(ight).
 
 Each side can have one of four types: wall (which blocks LoS), doorClosed (which blocks LoS and has a closed door image), doorOpen (which blocks LoS for the wall except where the door is and has an open door image), and empty (which doesn't block LoS). If a side isn't specified, it defaults to empty.
 
-To create a side, add a line to the room's gmnotes like this: *<side>*<type>*. Make sure that the information is on its own line and that there is an empty line at the bottom of the gmnotes. For example, gmnotes could look like this when first creating sides on a room:
-*room*
-*t*wall*
-*b*empty*
-*l*doorClosed*
-*r*doorOpen*
+To create a side, add a line to the room's gmnotes like this: __\*<side>\*<type>\*__. Make sure that the information is on its own line and that there is an empty line at the bottom of the gmnotes. For example, gmnotes could look like this when first creating sides on a room:
+__\*room\*__
+__\*t\*wall\*__
+__\*b\*empty\*__
+__\*l\*doorClosed\*__
+__\*r\*doorOpen\*__
  
 
 Rooms can be moved, rotated, and resized. The API will make sure that everything is drawn properly.
