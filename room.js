@@ -349,7 +349,7 @@ function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, door
                 //create walls except where the door is:
                 var wall = createLosWall(room, pointA, findPointWithOffset(pointA, doorPosition, 35));
                 gmNotes = gmNotes + wall.id + ".";
-                wall = createLosWall(room, pointB, findPointWithOffset(pointB, doorPosition, 35));
+                wall = createLosWall(room, findPointWithOffset(pointB, doorPosition, 35), pointB);
                 gmNotes = gmNotes + wall.id;
             } else {
                 gmNotes = gmNotes + ".";
