@@ -557,11 +557,13 @@ function roomSideAdd(command, selected, who) {
         var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
         var sideMeta;
         
-        for(var i = 0;i < sideMetas.length;i++) {
-            if (sideMetas[i].substring(1, 2) == commands[0]) {
-                sendWhisper("API", who, "That side is already on that room.");
-                return;
-            } 
+        if(sideMetas) {
+            for(var i = 0;i < sideMetas.length;i++) {
+                if (sideMetas[i].substring(1, 2) == commands[0]) {
+                    sendWhisper("API", who, "That side is already on that room.");
+                    return;
+                } 
+            }
         }
         
         //add the side:
@@ -571,7 +573,7 @@ function roomSideAdd(command, selected, who) {
 }
 
 //removes the side of a selected room:
-function roomSideRemove(command, selected, who) {
+function roomSideRemove(side, selected, who) {
     var room = selectedRoom(selected, who);
     
     if(room) {
@@ -580,12 +582,14 @@ function roomSideRemove(command, selected, who) {
         var sideMeta;
         var newGmNotes = "*room*%3Cbr%3E";
         
-        for(var i = 0;i < sideMetas.length;i++) {
-            if (sideMetas[i].substring(1, 2) == side) {
-                sideMeta = sideMetas[i];
-            } else {
-                //write the meta into back into gmnotes:
-                newGmNotes = newGmNotes + sideMetas[i] + "*%3Cbr%3E";
+        if(sideMetas) {
+            for(var i = 0;i < sideMetas.length;i++) {
+                if (sideMetas[i].substring(1, 2) == side) {
+                    sideMeta = sideMetas[i];
+                } else {
+                    //write the meta into back into gmnotes:
+                    newGmNotes = newGmNotes + sideMetas[i] + "*%3Cbr%3E";
+                }
             }
         }
         
