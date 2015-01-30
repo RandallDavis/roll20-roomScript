@@ -9,25 +9,19 @@ Some of this was inspired by other scripts (credited in the script itself), but 
 
 #Creating a room
 
-Any image can be made into a room that is automatically managed. Setting rooms up requires some simple meta-coding.
+Any image can be made into a room that is automatically managed.
 
-To turn an image into a room, write __\*room\*__ in the first line of the gmnotes. As soon as the image becomes a room, it is pushed to the Maps layer and is from then on managed by the API.
+To turn an image into a room, select an image, and type __!roomAdd__. As soon as the image becomes a room, it is pushed to the Maps layer as a convenience and is from then on managed by the API. The room can be moved back to other layers without doing any harm, if that's more to your liking.
+
+Rooms can be moved, rotated, and resized. The API will make sure that everything is drawn properly.
+
+#Creating a side
 
 A room has four sides: __t__(op), __b__(ottom), __l__(eft), and __r__(ight).
 
-Each side can have one of four types: wall (which blocks LoS), doorClosed (which blocks LoS and has a closed door image), doorOpen (which blocks LoS for the wall except where the door is and has an open door image), and empty (which doesn't block LoS). If a side isn't specified, it defaults to empty.
+Each side can have one of four types: __wall__ (which blocks LoS), __doorClosed__ (which blocks LoS and has a closed door image), __doorOpen__ (which blocks LoS for the wall except where the door is and has an open door image), and __empty__ (which doesn't block LoS). If a side isn't specified, it defaults to empty.
 
-To create a side, add a line to the room's gmnotes like this: __\*\<side\>\*\<type\>\*__. Make sure that the information is on its own line and that there is an empty line at the bottom of the gmnotes. For example, gmnotes could look like this when first creating sides on a room:
-```
-*room*
-*t*wall*
-*b*empty*
-*l*doorClosed*
-*r*doorOpen*
- 
-```
-
-Rooms can be moved, rotated, and resized. The API will make sure that everything is drawn properly.
+To create a side, select the room and type __!roomSideAdd \<side\> \<type\>__.
 
 #Feeding the room door images
 
@@ -39,14 +33,12 @@ To open or close a door, just move or rotate the door you want to toggle.
 
 As the room gets redrawn, it will have old dynamic lighting lines that it doesn't need any more. Roll20's API doesn't allow these lines to be deleted automatically, so they have to be trashed by hand. When lines are no longer needed, they are moved to the upper left of the GM layer. All of these can be selected at once (by dragging over them) and then deleted.
 
-#Changing a side's type
+#Removing a side
 
-If you have a type of side on a room already and want to change it to something else, you have to be careful to do this in a way that doesn't leave any mess behind (some of which you may not be able to see).
+To remove a side, select the room and type __!roomRemoveSide \<side\>__.
 
-Select the room you want to change and type the following into chat: __!roomRemoveSide \<side\>__.
-
-After the side is deleted, create the new version of the side as normal.
+If you want to change a side to a different type, remove the side and add a new one afterward.
 
 #Deleting a room
 
-Before deleting a room, remove all of its sides (via __!roomRemoveSide \<side\>__) to get rid of all of its objects (including those you can't see). After that, you can just delete the room image.
+If you want to delete a room, select it and type __!roomRemove__.
