@@ -43,7 +43,7 @@ function createLosWall(parent, pointA, pointB) {
 }
 
 //shrinks images (but sadly not paths) and moves everything over to the top left corner of the page where they can be manually deleted:
-function trashObject(obj, side) {
+function trashObject(obj) {
     if(obj != null) {
         obj.set("rotation", 90);
         obj.set("top", 10);
@@ -433,7 +433,7 @@ function drawRoomSide(room, roomXY, side, instructions, toggle) {
         oldWallList = oldWalls.split('.');
         
         for(var i = 0;i < oldWallList.length;i++) {
-            trashObject(getObj("path", oldWallList[i]), side);
+            trashObject(getObj("path", oldWallList[i]));
         }
     } catch(e) { 
         log(e.name + ": " + e.message);
@@ -442,8 +442,8 @@ function drawRoomSide(room, roomXY, side, instructions, toggle) {
     return gmNotes + "*%3Cbr%3E";
 }
 
-//removes the side of a selected room:
-function roomRemoveSide(side, selected, who) {
+//determines if one (and only one) room is selected and returns it if so:
+function selectedRoom(selected, who) {
     if(!selected || selected.length < 1) {
         sendWhisper("API", who, "You need to have a room selected.");
         return;
@@ -460,31 +460,171 @@ function roomRemoveSide(side, selected, who) {
         return;
     }
     
-    var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
-    var sideMeta;
-    var newGmNotes = "*room*%3Cbr%3E";
-    
-    for(var i = 0;i < sideMetas.length;i++) {
-        if (sideMetas[i].substring(1, 2) == side) {
-            sideMeta = sideMetas[i];
-        } else {
-            //write the meta into back into gmnotes:
-            newGmNotes = newGmNotes + sideMetas[i] + "*%3Cbr%3E";
-        }
-    }
-    
-    if(!sideMeta) {
-        sendWhisper("API", who, "The side '" + side + "' cannot be found in the selected room.");
+    return room;
+}
+
+//determines if one (and only one) empty image is selected and returns it if so:
+function selectedEmptyImage(selected, who) {
+    if(!selected || selected.length < 1) {
+        sendWhisper("API", who, "You need to have a picture selected.");
+        return;
+    } else if(selected.length > 1) {
+        sendWhisper("API", who, "Only one object can be selected.");
         return;
     }
     
-    var idsToKill = sideMeta.substring(3).split('.');
+    var pic = getObj("graphic", selected[0]._id);
+    var gmNotes = pic.get("gmnotes");
     
-    for(var i = 0;i < idsToKill.length;i++) {
-        trashObject(getObj("path", idsToKill[i]), sideMeta.substring(1, 2));
-        trashObject(getObj("graphic", idsToKill[i]), sideMeta.substring(1, 2));
+    if(gmNotes) {
+        sendWhisper("API", who, "The selected object must be a picture that isn't already used for anything. The one you have selected has gmnotes.");
+        return;
     }
     
+    return pic;
+}
+
+//turns the selected picture into a room:
+function roomAdd(selected, who) {
+    var pic = selectedEmptyImage(selected, who);
+    
+    if(pic) {
+        //initialize room:
+        pic.set("layer", "map");
+        pic.set("isdrawing", true);
+        pic.set("gmnotes", "*room*%3Cbr%3E");
+    }
+}
+
+//removes the selected room:
+function roomRemove(selected, who) {
+    var room = selectedRoom(selected, who);
+    
+    if(room) {
+        var gmNotes = room.get("gmnotes");
+        var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
+        var idsToKill = [];
+        
+        for(var i = 0;i < sideMetas.length;i++) {
+            var sideMeta = sideMetas[i].substring(3).split('.');
+            for(var i2 = 0;i2 < sideMeta.length;i2++) {
+                idsToKill.push(sideMeta[i2]);
+            }
+        }
+        
+        for(var i = 0;i < idsToKill.length;i++) {
+            trashObject(getObj("path", idsToKill[i]));
+            trashObject(getObj("graphic", idsToKill[i]));
+        }
+        
+        trashObject(room);
+    }
+}
+
+//adds the specified side to the selected room:
+function roomSideAdd(command, selected, who) {
+    var commands = command.split(' ');
+    
+    //validate side:
+    switch(commands[0]) {
+        case "t":
+        case "b":
+        case "l":
+        case "r":
+            break;
+        default:
+            sendWhisper("API", who, "Side must be 't', 'b', 'l', or 'r'.");
+            return;
+    }
+    
+    //validate type:
+    switch(commands[1]) {
+        case "empty":
+        case "wall":
+        case "doorClosed":
+        case "doorOpen":
+            break;
+        default:
+            sendWhisper("API", who, "Type must be 'empty', 'wall', 'doorClosed', or 'doorOpen'.");
+            return;
+    }
+    
+    var room = selectedRoom(selected, who);
+    
+    if(room) {
+        //make sure the side doesn't already exist:
+        var gmNotes = room.get("gmnotes");
+        var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
+        var sideMeta;
+        
+        for(var i = 0;i < sideMetas.length;i++) {
+            if (sideMetas[i].substring(1, 2) == commands[0]) {
+                sendWhisper("API", who, "That side is already on that room.");
+                return;
+            } 
+        }
+        
+        //add the side:
+        room.set("gmnotes", gmNotes + "*" + commands[0] + "*" + commands[1] + "*%3Cbr%3E");
+        drawRoom(room);
+    }
+}
+
+//removes the side of a selected room:
+function roomSideRemove(command, selected, who) {
+    var room = selectedRoom(selected, who);
+    
+    if(room) {
+        var gmNotes = room.get("gmnotes");
+        var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
+        var sideMeta;
+        var newGmNotes = "*room*%3Cbr%3E";
+        
+        for(var i = 0;i < sideMetas.length;i++) {
+            if (sideMetas[i].substring(1, 2) == side) {
+                sideMeta = sideMetas[i];
+            } else {
+                //write the meta into back into gmnotes:
+                newGmNotes = newGmNotes + sideMetas[i] + "*%3Cbr%3E";
+            }
+        }
+        
+        if(!sideMeta) {
+            sendWhisper("API", who, "The side '" + side + "' cannot be found in the selected room.");
+            return;
+        }
+        
+        var idsToKill = sideMeta.substring(3).split('.');
+        
+        for(var i = 0;i < idsToKill.length;i++) {
+            trashObject(getObj("path", idsToKill[i]));
+            trashObject(getObj("graphic", idsToKill[i]));
+        }
+        
+        room.set("gmnotes", newGmNotes);
+    }
+}
+
+//redraws the room:
+function drawRoom(room) {
+    var roomXY = getPoints(room.get("width"), room.get("height"), room.get("rotation"), room.get("left"), room.get("top"));
+    var sideMeta = room.get("gmnotes").match(/\*\S\*([^\*]+)/g);
+    var newGmNotes = "*room*%3Cbr%3E";
+    
+    //redraw sides of the room:
+    if(sideMeta != null) {
+        for(var i = 0;i < sideMeta.length;i++) {
+            try {
+                var sideMetaInstructions = sideMeta[i].substring(3).split('.');
+                
+                //redraw room side:
+                newGmNotes = newGmNotes + drawRoomSide(room, roomXY, sideMeta[i].substring(1, 2), sideMetaInstructions, false);
+            } catch(e) {
+                log(e.name + ": " + e.message);
+            }
+        }
+    }
+
     room.set("gmnotes", newGmNotes);
 }
 
@@ -493,29 +633,7 @@ on("change:graphic", function(obj) {
     
     //Room API:
     if(obj.get("gmnotes").match(/^\*room\*/)) {
-        var roomXY = getPoints(obj.get("width"), obj.get("height"), obj.get("rotation"), obj.get("left"), obj.get("top"));
-        var sideMeta = obj.get("gmnotes").match(/\*\S\*([^\*]+)/g);
-        var newGmNotes = "*room*%3Cbr%3E";
-        
-        //initialize room:
-        obj.set("layer", "map");
-        obj.set("isdrawing", true);
-        
-        //redraw sides of the room:
-        if(sideMeta != null) {
-            for(var i = 0;i < sideMeta.length;i++) {
-                try {
-                    var sideMetaInstructions = sideMeta[i].substring(3).split('.');
-                    
-                    //redraw room side:
-                    newGmNotes = newGmNotes + drawRoomSide(obj, roomXY, sideMeta[i].substring(1, 2), sideMetaInstructions, false);
-                } catch(e) {
-                    log(e.name + ": " + e.message);
-                }
-            }
-        }
- 
-        obj.set("gmnotes", newGmNotes);
+        drawRoom(obj);
     }
     
     //RoomDoor API:
@@ -556,22 +674,5 @@ on("change:graphic", function(obj) {
         newGmNotes = newGmNotes + drawRoomSide(room, roomXY, roomSideMeta.substring(1, 2), roomSideMetaInstructions, true);
  
         room.set("gmnotes", newGmNotes);
-    }
-});
-
-//whispers to a player:
-function sendWhisper(from, to, message) {
-    sendChat(from, "/w " + to.split(" ")[0] + " " + message);  
-}
-
-//receives API calls from the chat interface:
-on("chat:message", function(msg) {
-    if(msg.type == "api") {
-        if(msg.content.indexOf("!roomRemoveSide") !== -1) {
-            var chatCommand = msg.content.replace("!roomRemoveSide ", "").toLowerCase();
-            roomRemoveSide(chatCommand, msg.selected, msg.who);
-        } else {
-            sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomRemoveSide'.");
-        }
     }
 });
