@@ -28,7 +28,7 @@ function createLosWall(parent, pointA, pointB) {
         pageid: parent.get("pageid"),
         top: top,
         left: left,
-        stroke: "#00FF00",
+        stroke: WALL_COLOR,
         stroke_width: 1,
         _path: path
     });
@@ -236,12 +236,10 @@ function claimUnusedPic(room, type) {
     
     switch(type) {
         case "doorOpen":
-            //TODO: find a better image for an open door:
-            imgsrc = 'https://s3.amazonaws.com/files.d20.io/images/131648/utQtBfgxFFwcpfMmzkYVjg/max.png?1343901766';
+            imgsrc = DOOR_OPEN_PIC;
             break;
         case "doorClosed":
-            //TODO: find a better image for a closed door:
-            imgsrc = 'https://s3.amazonaws.com/files.d20.io/images/3042280/m2TF9j0cNTx4WfV5YcPKhA/max.png?1391937429';
+            imgsrc = DOOR_CLOSED_PIC;
             break;
         default:
             log("unknown type in claimUnusedPic(): " + type);
