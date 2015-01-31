@@ -266,6 +266,7 @@ function claimUnusedPic(room, type) {
     return pic;
 }
 
+//does the practical drawing of a room, with specifices about different sides factored out:
 function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, doorPosition, instructions) {
     var gmNotes = "";
     var doorOpenPic;
@@ -381,6 +382,7 @@ function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, door
     return gmNotes;
 }
 
+//draws the side of a room:
 function drawRoomSide(room, roomXY, side, instructions, toggle) {
     
     var oldWalls = "";
