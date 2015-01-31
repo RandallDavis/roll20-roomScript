@@ -261,7 +261,7 @@ function claimUnusedPic(room, type) {
         if(pic) {
             pic.set("gmnotes", "*" + type + "*%3Cbr%3E*p*" + room.id + "*%3Cbr%3E");
             pic.set("isdrawing", true);
-            pic.set("layer", "map");
+            pic.set("layer", room.get("layer"));
         }
     } catch(e) {}
     
@@ -317,6 +317,7 @@ function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, door
     
     //position the open door image:
     if(doorOpenPic) {
+        doorOpenPic.set("layer", room.get("layer"));
         doorOpenPic.set("rotation", room.get("rotation") + wallRotation + 90);
         doorOpenPic.set("top", doorPosition.y);
         doorOpenPic.set("left", doorPosition.x);
@@ -324,6 +325,7 @@ function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, door
     
     //position the closed door image:
     if(doorClosedPic) {
+        doorClosedPic.set("layer", room.get("layer"));
         doorClosedPic.set("rotation", room.get("rotation") + wallRotation + 90);
         doorClosedPic.set("top", doorPosition.y);
         doorClosedPic.set("left", doorPosition.x);
@@ -345,7 +347,8 @@ function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, door
                 doorClosedPic.set("width", 0);
             }
             
-            if(wallLength >= 80) {
+            //draw walls if wall is wide enough to draw around the door and the room isn't on the gm layer:
+            if(room.get("layer") != 'gmlayer' && wallLength >= 80) {
                 //create walls except where the door is:
                 var wall = createLosWall(room, pointA, findPointWithOffset(pointA, doorPosition, 35));
                 gmNotes = gmNotes + wall.id + ".";
@@ -369,8 +372,11 @@ function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, door
                 doorClosedPic.set("width", 70);
             }
         case "wall":
-            var wall = createLosWall(room, pointA, pointB);
-            gmNotes = gmNotes + wall.id;
+            //draw wall if the room isn't on the gm layer:
+            if(room.get("layer") != 'gmlayer') {
+                var wall = createLosWall(room, pointA, pointB);
+                gmNotes = gmNotes + wall.id;
+            }
             break;
     }
     
