@@ -7,7 +7,7 @@ Some of this was inspired by other scripts (credited in the script itself), but 
 
 
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=0YGJpxeqp7s" target="_blank"><img src="http://img.youtube.com/vi/0YGJpxeqp7s/0.jpg" 
-alt="Tutorial" width="240" height="180" border="10" /></a>
+alt="Tutorial" width="100%" height="100%" border="10" /></a>
 
 
 #Creating a room
