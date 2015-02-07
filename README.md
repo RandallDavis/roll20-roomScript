@@ -28,11 +28,9 @@ To create a side, select the room and type __!roomSideAdd \<side\> \<type\>__.
 
 Doors are easy to toggle! Just move or rotate a door image, and it will go back where it belongs. If it's a doorOpen, it'll become a doorClosed, and vice-versa.
 
-#Feeding the room door images
+#Setting up room door images
 
-When you create sides with doors, the API will complain in chat if it doesn't have door images. Each side that is a doorClosed or doorOpen will need images for both open and closed doors. To give the room the door images it needs, just drag an open door image and a closed door image (both need to be predefined pictures that it knows to look for) onto the page and change the room in any way. It will capture the door images and stop complaining.
-
-In order to set the door images it should look for, select an image for your door, and type __!roomDoorImageSet \<type\>__. The valid types are *open* and *closed*.
+In order to set the door images that will be created, put an image that you like on the page, select it, and type __!roomDoorImageSet \<type\>__. The valid types are *open* and *closed*. From that point on, doors will be created like those images.
 
 #Cleanup
 
