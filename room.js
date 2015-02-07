@@ -269,6 +269,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 return null;
         }
         
+        if(imgsrc.length == 0) {
+            sendChat("API", "Door image needs to be set up for " + type);
+            return null;
+        }
+        
         //try to create an object eligible for capture:
         try {
             
