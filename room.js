@@ -253,7 +253,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 log("unknown type in claimUnusedPic(): " + type);
                 return null;
         }
-<<<<<<< HEAD
         
         //try to find an object eligible for capture:
         try {
@@ -263,23 +262,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     _pageid: room.get("_pageid"),
                     gmnotes: ''
                 })[0];
-=======
-    } catch(e) {}
-    
-    return pic;
-}
-
-//does the practical drawing of a room, with specifices about different sides factored out:
-function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, doorPosition, instructions) {
-    var gmNotes = "";
-    var doorOpenPic;
-    var doorClosedPic;
-    
-    //find or capture door images:
-    switch(instructions[0]) {
-        case "doorOpen":
-        case "doorClosed":
->>>>>>> FETCH_HEAD
             
             //register the parent in the pic's gmnotes and otherwise initialize it:
             if(pic) {
@@ -336,51 +318,8 @@ function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, door
                     gmNotes = gmNotes + doorClosedPic.id;
                 }
                 gmNotes = gmNotes + ".";
-<<<<<<< HEAD
                 
                 break;
-=======
-            }
-            break;
-        case "doorClosed":
-            
-            //hide open door image:
-            if(doorOpenPic) {
-                doorOpenPic.set("height", 0);
-                doorOpenPic.set("width", 0);
-            }
-            
-            //show the closed door image:
-            if(doorClosedPic) {
-                doorClosedPic.set("height", 28);
-                doorClosedPic.set("width", 70);
-            }
-        case "wall":
-            //draw wall if the room isn't on the gm layer:
-            if(room.get("layer") != 'gmlayer') {
-                var wall = createLosWall(room, pointA, pointB);
-                gmNotes = gmNotes + wall.id;
-            }
-            break;
-    }
-    
-    return gmNotes;
-}
-
-//draws the side of a room:
-function drawRoomSide(room, roomXY, side, instructions, toggle) {
-    
-    var oldWalls = "";
-    
-    //record old walls that need to be deleted:
-    try {
-        //oldWall ID is always the last instruction; if there is no wall, it is empty:
-        oldWalls = oldWalls + instructions[instructions.length-1];
-        
-        //if the side was an open door, then there were two walls:
-        if(instructions[0] == "doorOpen") {
-            oldWalls = oldWalls + "." + instructions[instructions.length-2];
->>>>>>> FETCH_HEAD
         }
         
         //position the open door image:
@@ -707,25 +646,10 @@ function drawRoomSide(room, roomXY, side, instructions, toggle) {
         room.set("gmnotes", newGmNotes);
     }
     
-    //expose public functions:
-    return {
-        drawRoom: drawRoom
-    }
-
-})();
-
-//detects any changes to graphics:
-on("change:graphic", function(obj) {    
-    
-    //Room API:
-    if(obj.get("gmnotes").match(/^\*room\*/)) {
-        APIRoomManagement.drawRoom(obj);
-    }
-    
-    //RoomDoor API:
+    //toggles a door's state and redraws room:
     //this was inspired by John's (https://app.roll20.net/users/25259) Command Doors (https://gist.github.com/goblinHordes/6894547)
-    else if(obj.get("gmnotes").match(/^\*door(Open|Closed)\*/)) {
-        var doorMeta = obj.get("gmnotes").match(/\*p\*([^\*]+)/g);
+    function toggleDoor(door) {
+        var doorMeta = door.get("gmnotes").match(/\*p\*([^\*]+)/g);
         var roomId = doorMeta[0].substring(3);
         var room = getObj("graphic", roomId);
         
@@ -740,7 +664,7 @@ on("change:graphic", function(obj) {
         var roomSideMeta;
         var newGmNotes = "*room*%3Cbr%3E";
         for(var i = 0;i < roomMeta.length;i++) {
-            if(roomMeta[i].indexOf(obj.id) >= 0) {
+            if(roomMeta[i].indexOf(door.id) >= 0) {
                 roomSideMeta = roomMeta[i];
             } else {
                 //write the meta into back into gmnotes:
@@ -760,5 +684,62 @@ on("change:graphic", function(obj) {
         newGmNotes = newGmNotes + drawRoomSide(room, roomXY, roomSideMeta.substring(1, 2), roomSideMetaInstructions, true);
  
         room.set("gmnotes", newGmNotes);
+    }
+    
+    //whispers to a player:
+    function sendWhisper(from, to, message) {
+        sendChat(from, "/w " + to.split(" ")[0] + " " + message);  
+    }
+    
+    //expose public functions:
+    return {
+        sendWhisper: sendWhisper,
+        drawRoom: drawRoom,
+        toggleDoor: toggleDoor,
+        roomAdd: roomAdd,
+        roomRemove: roomRemove,
+        roomSideAdd: roomSideAdd,
+        roomSideRemove: roomSideRemove
+    }
+
+})();
+
+//detects any changes to graphics:
+on("change:graphic", function(obj) {    
+    
+    if(obj.get("gmnotes").match(/^\*room\*/)) {
+        APIRoomManagement.drawRoom(obj);
+    }
+    else if(obj.get("gmnotes").match(/^\*door(Open|Closed)\*/)) {
+        APIRoomManagement.toggleDoor(obj);
+    }
+});
+
+//receives API calls from the chat interface:
+on("chat:message", function(msg) {
+    if(msg.type == "api" && msg.content.match(/^!room/)) {
+        if(msg.content.match(/^!roomAdd$/)) {
+            APIRoomManagement.roomAdd(msg.selected, msg.who);
+        } else if(msg.content.match(/^!roomRemove$/)) {
+            APIRoomManagement.roomRemove(msg.selected, msg.who);
+        } else if(msg.content.match(/^!roomSideAdd\s?/)) {
+            var chatCommand = msg.content.split(' ');
+            if(chatCommand.length != 3) {
+                APIRoomManagement.sendWhisper("API", msg.who, "Expected syntax is '!roomSideAdd [side] [type]'.");
+                return;
+            }
+            chatCommand = msg.content.replace("!roomSideAdd ", "");
+            APIRoomManagement.roomSideAdd(chatCommand, msg.selected, msg.who);
+        } else if(msg.content.match(/^!roomSideRemove\s?/)) {
+            var chatCommand = msg.content.split(' ');
+            if(chatCommand.length != 2) {
+                APIRoomManagement.sendWhisper("API", msg.who, "Expected syntax is '!roomSideRemove [side]'.");
+                return;
+            }
+            chatCommand = msg.content.replace("!roomSideRemove ", "");
+            APIRoomManagement.roomSideRemove(chatCommand, msg.selected, msg.who);
+        } else {
+            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', and 'roomSideRemove'.");
+        }
     }
 });
