@@ -253,6 +253,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 log("unknown type in claimUnusedPic(): " + type);
                 return null;
         }
+<<<<<<< HEAD
         
         //try to find an object eligible for capture:
         try {
@@ -262,6 +263,23 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     _pageid: room.get("_pageid"),
                     gmnotes: ''
                 })[0];
+=======
+    } catch(e) {}
+    
+    return pic;
+}
+
+//does the practical drawing of a room, with specifices about different sides factored out:
+function drawRoomSideHelper(room, pointA, pointB, wallLength, wallRotation, doorPosition, instructions) {
+    var gmNotes = "";
+    var doorOpenPic;
+    var doorClosedPic;
+    
+    //find or capture door images:
+    switch(instructions[0]) {
+        case "doorOpen":
+        case "doorClosed":
+>>>>>>> FETCH_HEAD
             
             //register the parent in the pic's gmnotes and otherwise initialize it:
             if(pic) {
@@ -318,8 +336,51 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     gmNotes = gmNotes + doorClosedPic.id;
                 }
                 gmNotes = gmNotes + ".";
+<<<<<<< HEAD
                 
                 break;
+=======
+            }
+            break;
+        case "doorClosed":
+            
+            //hide open door image:
+            if(doorOpenPic) {
+                doorOpenPic.set("height", 0);
+                doorOpenPic.set("width", 0);
+            }
+            
+            //show the closed door image:
+            if(doorClosedPic) {
+                doorClosedPic.set("height", 28);
+                doorClosedPic.set("width", 70);
+            }
+        case "wall":
+            //draw wall if the room isn't on the gm layer:
+            if(room.get("layer") != 'gmlayer') {
+                var wall = createLosWall(room, pointA, pointB);
+                gmNotes = gmNotes + wall.id;
+            }
+            break;
+    }
+    
+    return gmNotes;
+}
+
+//draws the side of a room:
+function drawRoomSide(room, roomXY, side, instructions, toggle) {
+    
+    var oldWalls = "";
+    
+    //record old walls that need to be deleted:
+    try {
+        //oldWall ID is always the last instruction; if there is no wall, it is empty:
+        oldWalls = oldWalls + instructions[instructions.length-1];
+        
+        //if the side was an open door, then there were two walls:
+        if(instructions[0] == "doorOpen") {
+            oldWalls = oldWalls + "." + instructions[instructions.length-2];
+>>>>>>> FETCH_HEAD
         }
         
         //position the open door image:
