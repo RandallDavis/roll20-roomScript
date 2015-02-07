@@ -18,6 +18,17 @@ var APIRoomManagement = APIRoomManagement || (function() {
             };
         }
     }
+    
+    //create object with hack to get around the bug where newly created objects can't be modified:
+    function fixedCreateObj()
+    {
+        var obj = createObj.apply(this, arguments);
+        if (obj && !obj.fbpath)
+        {
+            obj.fbpath = obj.changed._fbpath.replace(/([^\/]*\/){4}/, '/');
+        }
+        return obj;
+    }
 
     //creates a dynamic lighting segment from A to B on the parent's page: 
     function createLosWall(parent, pointA, pointB) {
@@ -43,8 +54,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         //create a segment path on the walls layer to block LoS:
-        var wall = createObj("path", {
-            name: String(n),
+        var wall = fixedCreateObj("path", {
+            name: "wall_" + String(n),
             layer: "walls",
             pageid: parent.get("pageid"),
             top: top,
@@ -53,13 +64,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             stroke_width: 1,
             _path: path
         });
-        
-        //hack to get around the bug where newly created objects can't be modified:
-        var p = wall.changed._fbpath;
-        var new_p = p.replace(/([^\/]*\/){4}/, "/");
-        wall.fbpath = new_p;
-        wall.set("name", "wall_" + n);
-        
+       
         return wall;
     }
     
