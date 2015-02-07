@@ -32,6 +32,8 @@ Doors are easy to toggle! Just move or rotate a door image, and it will go back 
 
 When you create sides with doors, the API will complain in chat if it doesn't have door images. Each side that is a doorClosed or doorOpen will need images for both open and closed doors. To give the room the door images it needs, just drag an open door image and a closed door image (both need to be predefined pictures that it knows to look for) onto the page and change the room in any way. It will capture the door images and stop complaining.
 
+In order to set the door images it should look for, select an image for your door, and type __!roomDoorImageSet \<type\>__. The valid types are *open* and *closed*.
+
 #Cleanup
 
 As the room gets redrawn, it will have old dynamic lighting lines that it doesn't need any more. Roll20's API doesn't allow these lines to be deleted automatically, so they have to be trashed by hand. When lines are no longer needed, they are moved to the upper left of the GM layer. All of these can be selected at once (by dragging over them) and then deleted.
