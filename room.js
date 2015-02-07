@@ -4,7 +4,20 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 0.1;
+    var version = 0.1,
+        schemaVersion = 0.1;
+        
+    function checkInstall() {
+        if( ! _.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
+            log('APIRoomManagement: Resetting state');
+            state.APIRoomManagement = {
+                version: schemaVersion,
+                wallColor: "#00FF00",
+                doorOpenPicUrl: "https://s3.amazonaws.com/files.d20.io/images/131648/utQtBfgxFFwcpfMmzkYVjg/max.png?1343901766",
+                doorClosedPicUrl: "https://s3.amazonaws.com/files.d20.io/images/3042280/m2TF9j0cNTx4WfV5YcPKhA/max.png?1391937429"
+            };
+        }
+    }
 
     //creates a dynamic lighting segment from A to B on the parent's page: 
     function createLosWall(parent, pointA, pointB) {
@@ -36,7 +49,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             pageid: parent.get("pageid"),
             top: top,
             left: left,
-            stroke: WALL_COLOR,
+            stroke: state.APIRoomManagement.wallColor,
             stroke_width: 1,
             _path: path
         });
@@ -235,19 +248,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
     /*Detects a pic on the room's page that has nothing in the gmnotes, and claims it for the room.
       Roll20 has some major bugs when creating graphic objects, so instead, require GMs to create them 
         manually, and capture them.
-      Pics are selected based on their imgsrc - they need to be explicitly registered below. It would 
-        be an easy modification to the code to make it that multiple pre-registered images were 
-        candidates for capturing.*/
+      Pics are selected based on their imgsrc. It would be an easy modification to the code to make 
+        it that multiple pre-registered images were candidates for capturing.*/
     function claimUnusedPic(room, type) {
         var pic = null;
         var imgsrc = null;
         
         switch(type) {
             case "doorOpen":
-                imgsrc = DOOR_OPEN_PIC;
+                imgsrc = state.APIRoomManagement.doorOpenPicUrl;
                 break;
             case "doorClosed":
-                imgsrc = DOOR_CLOSED_PIC;
+                imgsrc = state.APIRoomManagement.doorClosedPicUrl;
                 break;
             default:
                 log("unknown type in claimUnusedPic(): " + type);
@@ -693,6 +705,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //expose public functions:
     return {
+        checkInstall: checkInstall,
         sendWhisper: sendWhisper,
         drawRoom: drawRoom,
         toggleDoor: toggleDoor,
@@ -742,4 +755,8 @@ on("chat:message", function(msg) {
             APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', and 'roomSideRemove'.");
         }
     }
+});
+
+on('ready',function() {
+    APIRoomManagement.checkInstall();
 });
