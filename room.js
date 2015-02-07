@@ -250,12 +250,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
     	return points;
     }
     
-    /*Detects a pic on the room's page that has nothing in the gmnotes, and claims it for the room.
-      Roll20 has some major bugs when creating graphic objects, so instead, require GMs to create them 
-        manually, and capture them.
-      Pics are selected based on their imgsrc. It would be an easy modification to the code to make 
-        it that multiple pre-registered images were candidates for capturing.*/
-    function claimUnusedPic(room, type) {
+    /*Creates a pic and claims it for the room.
+      Pics are created based on the imgsrc in the state object. It would be an easy modification 
+        to the code to make it that multiple pre-registered images were candidates for capturing.*/
+    function createAndClaimPic(room, type) {
         var pic = null;
         var imgsrc = null;
         
@@ -267,28 +265,64 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 imgsrc = state.APIRoomManagement.doorClosedPicUrl;
                 break;
             default:
-                log("unknown type in claimUnusedPic(): " + type);
+                log("unknown type in createAndClaimPic(): " + type);
                 return null;
         }
         
-        //try to find an object eligible for capture:
+        //try to create an object eligible for capture:
         try {
+            
+            //create the door pic in the trash pile (in case timeout occurs):
+            setTimeout(function() {
+                fixedCreateObj('graphic', {
+                    imgsrc: imgsrc,
+                    layer: "gmlayer",
+                    pageid: room.get("pageid"),
+                    top: 10,
+                    left: 10,
+                    width: 1,
+                    height: 1,
+                    scale: 0.0000001
+                });
+            }, 5);
+            
+            //sleep so that the creation attempt has a chance to complete:
+            log("Sleeping briefly to wait for image creation.");
+            sleep(2000);
+            
+            //find the newly created pic:
             pic = findObjs({
                     type: 'graphic',
                     imgsrc: imgsrc,
                     _pageid: room.get("_pageid"),
+                    layer: "gmlayer",
                     gmnotes: ''
                 })[0];
-            
+                
             //register the parent in the pic's gmnotes and otherwise initialize it:
             if(pic) {
+                toFront(pic);
                 pic.set("gmnotes", "*" + type + "*%3Cbr%3E*p*" + room.id + "*%3Cbr%3E");
                 pic.set("isdrawing", true);
                 pic.set("layer", room.get("layer"));
+            } else {
+                log("Unable to claim newly created picture.");
             }
-        } catch(e) {}
+        } catch(e) {
+            log("Error: " + e);
+        }
         
         return pic;
+    }
+    
+    //sleep function:
+    function sleep(milliseconds) {
+        var start = new Date().getTime();
+        for(var i = 0; i < 1e7; i++) {
+            if((new Date().getTime() - start) > milliseconds) {
+              break;
+            }
+        }
     }
     
     //does the practical drawing of a room, with specifices about different sides factored out:
@@ -307,12 +341,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     doorOpenPic = getObj("graphic", instructions[1]);
                 }
                 if(!doorOpenPic) {
-                    doorOpenPic = claimUnusedPic(room, "doorOpen");
-           
-                    //if there was no pic to claim, whine about it:
-                    if(!doorOpenPic) {
-                        sendChat("API", "Feed me an open door pic!");
-                    }
+                    doorOpenPic = createAndClaimPic(room, "doorOpen");
                 }
                 if(doorOpenPic) {
                     gmNotes = gmNotes + doorOpenPic.id;
@@ -324,12 +353,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     doorClosedPic = getObj("graphic", instructions[2]);
                 }
                 if(!doorClosedPic) {
-                    doorClosedPic = claimUnusedPic(room, "doorClosed");
-           
-                    //if there was no pic to claim, whine about it:
-                    if(!doorClosedPic) {
-                        sendChat("API", "Feed me a closed door pic!");
-                    }
+                    doorClosedPic = createAndClaimPic(room, "doorClosed");
                 }
                 if(doorClosedPic) {
                     gmNotes = gmNotes + doorClosedPic.id;
@@ -728,10 +752,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         switch(doorType) {
             case "doorClosed":
-                state.APIRoomManagement.doorClosedPicUrl = doorPic.get("imgsrc");
+                state.APIRoomManagement.doorClosedPicUrl = doorPic.get("imgsrc").replace("max.png", "thumb.png");
                 break;
             case "doorOpen": 
-                state.APIRoomManagement.doorOpenPicUrl = doorPic.get("imgsrc");
+                state.APIRoomManagement.doorOpenPicUrl = doorPic.get("imgsrc").replace("max.png", "thumb.png");
                 break;
             default:
                 log("Unknown type " + doorType + " in setDoorUrl.");
