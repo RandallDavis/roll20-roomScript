@@ -9,12 +9,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
     function checkInstall() {
         if( ! _.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
-            log('APIRoomManagement: Resetting state');
+            log('APIRoomManagement: Resetting state. Door images will need to be set.');
             state.APIRoomManagement = {
                 version: schemaVersion,
                 wallColor: "#00FF00",
-                doorOpenPicUrl: "https://s3.amazonaws.com/files.d20.io/images/131648/utQtBfgxFFwcpfMmzkYVjg/max.png?1343901766",
-                doorClosedPicUrl: "https://s3.amazonaws.com/files.d20.io/images/3042280/m2TF9j0cNTx4WfV5YcPKhA/max.png?1391937429"
+                doorOpenPicUrl: "",
+                doorClosedPicUrl: ""
             };
         }
     }
@@ -468,17 +468,34 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return gmNotes + "*%3Cbr%3E";
     }
     
-    //determines if one (and only one) room is selected and returns it if so:
-    function selectedRoom(selected, who) {
+    //determines if one (and only one) graphic is selected and returns it if so:
+    function selectedGraphic(selected, who) {
         if(!selected || selected.length < 1) {
-            sendWhisper("API", who, "You need to have a room selected.");
+            sendWhisper("API", who, "You need to have an image selected.");
             return;
         } else if(selected.length > 1) {
-            sendWhisper("API", who, "Only one object can be selected.");
+            sendWhisper("API", who, "Only one image can be selected.");
             return;
         }
         
-        var room = getObj("graphic", selected[0]._id);
+        var graphic = getObj("graphic", selected[0]._id);
+        
+        if(!graphic) {
+            sendWhisper("API", who, "The selected object must be an image.");
+            return;
+        }
+        
+        return graphic;
+    }
+    
+    //determines if one (and only one) room is selected and returns it if so:
+    function selectedRoom(selected, who) {
+        var room = selectedGraphic(selected, who);
+        
+        if(!room) {
+            return;
+        }
+        
         var gmNotes = room.get("gmnotes");
         
         if(!gmNotes.match(/^\*room\*/)) {
@@ -491,15 +508,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //determines if one (and only one) empty image is selected and returns it if so:
     function selectedEmptyImage(selected, who) {
-        if(!selected || selected.length < 1) {
-            sendWhisper("API", who, "You need to have a picture selected.");
-            return;
-        } else if(selected.length > 1) {
-            sendWhisper("API", who, "Only one object can be selected.");
+        var pic = selectedGraphic(selected, who);
+        
+        if(!pic) {
             return;
         }
         
-        var pic = getObj("graphic", selected[0]._id);
         var gmNotes = pic.get("gmnotes");
         
         if(gmNotes) {
@@ -698,6 +712,27 @@ var APIRoomManagement = APIRoomManagement || (function() {
         room.set("gmnotes", newGmNotes);
     }
     
+    //sets the door image for capturing to that of the selected image:
+    function setDoorUrl(selected, who, doorType) {
+        var doorPic = selectedGraphic(selected, who);
+        
+        if(!doorPic) {
+            log(":(");
+            return;
+        }
+        
+        switch(doorType) {
+            case "doorClosed":
+                state.APIRoomManagement.doorClosedPicUrl = doorPic.get("imgsrc");
+                break;
+            case "doorOpen": 
+                state.APIRoomManagement.doorOpenPicUrl = doorPic.get("imgsrc");
+                break;
+            default:
+                log("Unknown type " + doorType + " in setDoorUrl.");
+        }
+    }
+    
     //whispers to a player:
     function sendWhisper(from, to, message) {
         sendChat(from, "/w " + to.split(" ")[0] + " " + message);  
@@ -712,7 +747,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         roomAdd: roomAdd,
         roomRemove: roomRemove,
         roomSideAdd: roomSideAdd,
-        roomSideRemove: roomSideRemove
+        roomSideRemove: roomSideRemove,
+        setDoorUrl: setDoorUrl
     }
 
 })();
@@ -751,8 +787,25 @@ on("chat:message", function(msg) {
             }
             chatCommand = msg.content.replace("!roomSideRemove ", "");
             APIRoomManagement.roomSideRemove(chatCommand, msg.selected, msg.who);
+        } else if(msg.content.match(/^!roomDoorImageSet\s?/)) {
+            var chatCommand = msg.content.split(' ');
+            if(chatCommand.length != 2) {
+                APIRoomManagement.sendWhisper("API", msg.who, "Expected syntax is '!roomDoorImageSet [open|closed]'.");
+                return;
+            }
+            switch(chatCommand[1]) {
+                case "open":
+                    APIRoomManagement.setDoorUrl(msg.selected, msg.who, "doorOpen");
+                    break;
+                case "closed":
+                    APIRoomManagement.setDoorUrl(msg.selected, msg.who, "doorClosed");
+                    break;
+                default:
+                    APIRoomManagement.sendWhisper("API", msg.who, "Expected door types are 'open' or 'closed'.");
+                    return;
+            }
         } else {
-            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', and 'roomSideRemove'.");
+            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', and 'roomDoorImageSet'.");
         }
     }
 });
