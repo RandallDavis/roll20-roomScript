@@ -565,7 +565,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(pic) {
             //initialize room:
             pic.set("layer", "map");
-            pic.set("isdrawing", true);
             pic.set("gmnotes", "*room*%3Cbr%3E");
         }
     }
