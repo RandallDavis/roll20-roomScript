@@ -807,6 +807,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     }
     
+    //removes an adhoc wall:
+    function adhocWallRemove(selected, who) {
+        log("adhocWallRemove not implemented yet");
+    }
+    
     //whispers to a player:
     function sendWhisper(from, to, message) {
         sendChat(from, "/w " + to.split(" ")[0] + " " + message);  
@@ -824,7 +829,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         roomSideRemove: roomSideRemove,
         setDoorUrl: setDoorUrl,
         adhocWallAdd: adhocWallAdd,
-        drawAdhocWall: drawAdhocWall
+        drawAdhocWall: drawAdhocWall,
+        adhocWallRemove: adhocWallRemove
     }
 
 })();
@@ -883,8 +889,10 @@ on("chat:message", function(msg) {
             }
         } else if(msg.content.match(/^!roomAdhocWallAdd$/)) {
             APIRoomManagement.adhocWallAdd(msg.selected, msg.who);
+        } else if(msg.content.match(/^!roomAdhocWallRemove$/)) {
+            APIRoomManagement.adhocWallRemove(msg.selected, msg.who);
         } else {
-            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', and 'roomAdhocWallAdd'.");
+            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', and 'roomAdhocWallRemove'.");
         }
     }
 });
