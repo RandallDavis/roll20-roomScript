@@ -116,7 +116,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             topLeft : {
                 x : 0,
                 y : 0
-    		},
+        	},
     		topMid : {
     			x : 0,
     			y : 0
@@ -306,10 +306,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 
             //register the parent in the pic's gmnotes and otherwise initialize it:
             if(pic) {
-                toFront(pic);
                 pic.set("gmnotes", "*" + type + "*%3Cbr%3E*p*" + room.id + "*%3Cbr%3E");
                 pic.set("isdrawing", true);
                 pic.set("layer", room.get("layer"));
+                toFront(pic);
             } else {
                 log("Unable to claim newly created picture.");
             }
