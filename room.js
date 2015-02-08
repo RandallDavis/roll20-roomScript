@@ -750,7 +750,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var doorPic = selectedGraphic(selected, who);
         
         if(!doorPic) {
-            log(":(");
             return;
         }
         
@@ -763,6 +762,48 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 log("Unknown type " + doorType + " in setDoorUrl.");
+        }
+    }
+    
+    //draws an adhoc wall:
+    function drawAdhocWall(adhocWall) {
+        var wallXY = getPoints(adhocWall.get("width"), adhocWall.get("height"), adhocWall.get("rotation"), adhocWall.get("left"), adhocWall.get("top"));
+        var meta = adhocWall.get("gmnotes").match(/\*w\*([^\*]+)/g);
+        var newGmNotes = "*adhocWall*%3Cbr%3E";
+        
+        //draw LoS wall if the adhoc wall isn't on the gm layer:
+        if(adhocWall.get("layer") != 'gmlayer') {
+            var wall;
+            
+            //draw a LoS wall through the longer dimension of the pic:
+            if(adhocWall.get("width") > adhocWall.get("height")) {
+                wall = createLosWall(adhocWall, wallXY.midLeft, wallXY.midRight);
+            } else {
+                wall = createLosWall(adhocWall, wallXy.topMid, wallXY.botMid);
+            }
+            
+            newGmNotes = newGmNotes + "*w*" + wall.id + "*%3Cbr%3E";
+        }
+        
+        //delete old walls:
+        try {
+            for(var i = 0;i < meta.length;i++) {
+                trashObject(getObj("path", meta[i].substring(3)));
+            }
+        } catch(e) {}
+        
+        adhocWall.set("gmnotes", newGmNotes);
+    }
+    
+    //turns an image into an adhoc wall:
+    function adhocWallAdd(selected, who) {
+        var adhocWall = selectedEmptyImage(selected, who);
+        
+        if(adhocWall) {
+            //initialize adhoc wall:
+            adhocWall.set("layer", "map");
+            adhocWall.set("gmnotes", "*adhocWall*%3Cbr%3E");
+            drawAdhocWall(adhocWall);
         }
     }
     
@@ -781,7 +822,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         roomRemove: roomRemove,
         roomSideAdd: roomSideAdd,
         roomSideRemove: roomSideRemove,
-        setDoorUrl: setDoorUrl
+        setDoorUrl: setDoorUrl,
+        adhocWallAdd: adhocWallAdd,
+        drawAdhocWall: drawAdhocWall
     }
 
 })();
@@ -791,9 +834,10 @@ on("change:graphic", function(obj) {
     
     if(obj.get("gmnotes").match(/^\*room\*/)) {
         APIRoomManagement.drawRoom(obj);
-    }
-    else if(obj.get("gmnotes").match(/^\*door(Open|Closed)\*/)) {
+    } else if(obj.get("gmnotes").match(/^\*door(Open|Closed)\*/)) {
         APIRoomManagement.toggleDoor(obj);
+    } else if(obj.get("gmnotes").match(/^\*adhocWall\*/)) {
+        APIRoomManagement.drawAdhocWall(obj);
     }
 });
 
@@ -837,8 +881,10 @@ on("chat:message", function(msg) {
                     APIRoomManagement.sendWhisper("API", msg.who, "Expected door types are 'open' or 'closed'.");
                     return;
             }
+        } else if(msg.content.match(/^!roomAdhocWallAdd$/)) {
+            APIRoomManagement.adhocWallAdd(msg.selected, msg.who);
         } else {
-            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', and 'roomDoorImageSet'.");
+            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', and 'roomAdhocWallAdd'.");
         }
     }
 });
