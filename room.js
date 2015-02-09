@@ -29,6 +29,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         return obj;
     }
+    
+    //find imgsrc that is legal for object creation
+    var getCleanImgsrc = function (imgsrc) {
+        var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max)(.*)$/);
+        
+        if(parts) {
+          return parts[1] + 'thumb' + parts[3];
+        }
+        return;
+    };
 
     //creates a dynamic lighting segment from A to B on the parent's page: 
     function createLosWall(parent, pointA, pointB) {
@@ -753,12 +763,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
             return;
         }
         
+        var imgsrc = getCleanImgsrc(doorPic.get("imgsrc"));
+        
         switch(doorType) {
             case "doorClosed":
-                state.APIRoomManagement.doorClosedPicUrl = doorPic.get("imgsrc").replace("max.png", "thumb.png");
+                state.APIRoomManagement.doorClosedPicUrl = imgsrc;
                 break;
             case "doorOpen": 
-                state.APIRoomManagement.doorOpenPicUrl = doorPic.get("imgsrc").replace("max.png", "thumb.png");
+                state.APIRoomManagement.doorOpenPicUrl = imgsrc;
                 break;
             default:
                 log("Unknown type " + doorType + " in setDoorUrl.");
