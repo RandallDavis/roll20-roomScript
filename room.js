@@ -550,6 +550,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return room;
     }
     
+    //determines if one (and only one) adhoc wall is selected and returns it if so:
+    function selectedAdhocWall(selected, who) {
+        var adhocWall = selectedGraphic(selected, who);
+        
+        if(!adhocWall) {
+            return;
+        }
+        
+        var gmNotes = adhocWall.get("gmnotes");
+        
+        if(!gmNotes.match(/^\*adhocWall\*/)) {
+            sendWhisper("API", who, "The selected object must be an adhoc wall.");
+            return;
+        }
+        
+        return adhocWall;
+    }
+    
     //determines if one (and only one) empty image is selected and returns it if so:
     function selectedEmptyImage(selected, who) {
         var pic = selectedGraphic(selected, who);
@@ -791,7 +809,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             if(adhocWall.get("width") > adhocWall.get("height")) {
                 wall = createLosWall(adhocWall, wallXY.midLeft, wallXY.midRight);
             } else {
-                wall = createLosWall(adhocWall, wallXy.topMid, wallXY.botMid);
+                wall = createLosWall(adhocWall, wallXY.topMid, wallXY.botMid);
             }
             
             newGmNotes = newGmNotes + "*w*" + wall.id + "*%3Cbr%3E";
@@ -821,7 +839,27 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //removes an adhoc wall:
     function adhocWallRemove(selected, who) {
-        log("adhocWallRemove not implemented yet");
+        var adhocWall = selectedAdhocWall(selected, who);
+        
+        if(adhocWall) {
+            var gmNotes = adhocWall.get("gmnotes");
+            var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
+            var idsToKill = [];
+            
+            for(var i = 0;i < sideMetas.length;i++) {
+                var sideMeta = sideMetas[i].substring(3).split('.');
+                for(var i2 = 0;i2 < sideMeta.length;i2++) {
+                    idsToKill.push(sideMeta[i2]);
+                }
+            }
+            
+            for(var i = 0;i < idsToKill.length;i++) {
+                trashObject(getObj("path", idsToKill[i]));
+                trashObject(getObj("graphic", idsToKill[i]));
+            }
+            
+            trashObject(adhocWall);
+        }
     }
     
     //whispers to a player:
