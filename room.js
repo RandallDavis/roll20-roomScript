@@ -867,86 +867,83 @@ var APIRoomManagement = APIRoomManagement || (function() {
         sendChat(from, "/w " + to.split(" ")[0] + " " + message);  
     }
     
+    //handle any changes to objects:
+    function handleObjectChange(obj) {
+        if(obj.get("gmnotes").match(/^\*room\*/)) {
+            drawRoom(obj);
+        } else if(obj.get("gmnotes").match(/^\*door(Open|Closed)\*/)) {
+            toggleDoor(obj);
+        } else if(obj.get("gmnotes").match(/^\*adhocWall\*/)) {
+            drawAdhocWall(obj);
+        }
+    }
+    
+    //handle user-input commands:
+    function handleUserInput(msg) {
+        if(msg.type == "api" && msg.content.match(/^!room/)) {
+            if(msg.content.match(/^!roomAdd$/)) {
+                roomAdd(msg.selected, msg.who);
+            } else if(msg.content.match(/^!roomRemove$/)) {
+                roomRemove(msg.selected, msg.who);
+            } else if(msg.content.match(/^!roomSideAdd\s?/)) {
+                var chatCommand = msg.content.split(' ');
+                if(chatCommand.length != 3) {
+                    sendWhisper("API", msg.who, "Expected syntax is '!roomSideAdd [side] [type]'.");
+                    return;
+                }
+                chatCommand = msg.content.replace("!roomSideAdd ", "");
+                roomSideAdd(chatCommand, msg.selected, msg.who);
+            } else if(msg.content.match(/^!roomSideRemove\s?/)) {
+                var chatCommand = msg.content.split(' ');
+                if(chatCommand.length != 2) {
+                    sendWhisper("API", msg.who, "Expected syntax is '!roomSideRemove [side]'.");
+                    return;
+                }
+                chatCommand = msg.content.replace("!roomSideRemove ", "");
+                roomSideRemove(chatCommand, msg.selected, msg.who);
+            } else if(msg.content.match(/^!roomDoorImageSet\s?/)) {
+                var chatCommand = msg.content.split(' ');
+                if(chatCommand.length != 2) {
+                    sendWhisper("API", msg.who, "Expected syntax is '!roomDoorImageSet [open|closed]'.");
+                    return;
+                }
+                switch(chatCommand[1]) {
+                    case "open":
+                        setDoorUrl(msg.selected, msg.who, "doorOpen");
+                        break;
+                    case "closed":
+                        setDoorUrl(msg.selected, msg.who, "doorClosed");
+                        break;
+                    default:
+                        sendWhisper("API", msg.who, "Expected door types are 'open' or 'closed'.");
+                        return;
+                }
+            } else if(msg.content.match(/^!roomAdhocWallAdd$/)) {
+                adhocWallAdd(msg.selected, msg.who);
+            } else if(msg.content.match(/^!roomAdhocWallRemove$/)) {
+                adhocWallRemove(msg.selected, msg.who);
+            } else {
+                sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', and 'roomAdhocWallRemove'.");
+            }
+        }
+    }
+    
+    //register event handlers:
+    registerEventHandlers = function() {
+        on('chat:message', handleUserInput);
+        on('change:graphic', handleObjectChange);
+    };
+    
     //expose public functions:
     return {
         checkInstall: checkInstall,
-        sendWhisper: sendWhisper,
-        drawRoom: drawRoom,
-        toggleDoor: toggleDoor,
-        roomAdd: roomAdd,
-        roomRemove: roomRemove,
-        roomSideAdd: roomSideAdd,
-        roomSideRemove: roomSideRemove,
-        setDoorUrl: setDoorUrl,
-        adhocWallAdd: adhocWallAdd,
-        drawAdhocWall: drawAdhocWall,
-        adhocWallRemove: adhocWallRemove
+        registerEventHandlers: registerEventHandlers
     }
 
 })();
 
-//detects any changes to graphics:
-on("change:graphic", function(obj) {    
-    
-    if(obj.get("gmnotes").match(/^\*room\*/)) {
-        APIRoomManagement.drawRoom(obj);
-    } else if(obj.get("gmnotes").match(/^\*door(Open|Closed)\*/)) {
-        APIRoomManagement.toggleDoor(obj);
-    } else if(obj.get("gmnotes").match(/^\*adhocWall\*/)) {
-        APIRoomManagement.drawAdhocWall(obj);
-    }
-});
-
-//receives API calls from the chat interface:
-on("chat:message", function(msg) {
-    if(msg.type == "api" && msg.content.match(/^!room/)) {
-        if(msg.content.match(/^!roomAdd$/)) {
-            APIRoomManagement.roomAdd(msg.selected, msg.who);
-        } else if(msg.content.match(/^!roomRemove$/)) {
-            APIRoomManagement.roomRemove(msg.selected, msg.who);
-        } else if(msg.content.match(/^!roomSideAdd\s?/)) {
-            var chatCommand = msg.content.split(' ');
-            if(chatCommand.length != 3) {
-                APIRoomManagement.sendWhisper("API", msg.who, "Expected syntax is '!roomSideAdd [side] [type]'.");
-                return;
-            }
-            chatCommand = msg.content.replace("!roomSideAdd ", "");
-            APIRoomManagement.roomSideAdd(chatCommand, msg.selected, msg.who);
-        } else if(msg.content.match(/^!roomSideRemove\s?/)) {
-            var chatCommand = msg.content.split(' ');
-            if(chatCommand.length != 2) {
-                APIRoomManagement.sendWhisper("API", msg.who, "Expected syntax is '!roomSideRemove [side]'.");
-                return;
-            }
-            chatCommand = msg.content.replace("!roomSideRemove ", "");
-            APIRoomManagement.roomSideRemove(chatCommand, msg.selected, msg.who);
-        } else if(msg.content.match(/^!roomDoorImageSet\s?/)) {
-            var chatCommand = msg.content.split(' ');
-            if(chatCommand.length != 2) {
-                APIRoomManagement.sendWhisper("API", msg.who, "Expected syntax is '!roomDoorImageSet [open|closed]'.");
-                return;
-            }
-            switch(chatCommand[1]) {
-                case "open":
-                    APIRoomManagement.setDoorUrl(msg.selected, msg.who, "doorOpen");
-                    break;
-                case "closed":
-                    APIRoomManagement.setDoorUrl(msg.selected, msg.who, "doorClosed");
-                    break;
-                default:
-                    APIRoomManagement.sendWhisper("API", msg.who, "Expected door types are 'open' or 'closed'.");
-                    return;
-            }
-        } else if(msg.content.match(/^!roomAdhocWallAdd$/)) {
-            APIRoomManagement.adhocWallAdd(msg.selected, msg.who);
-        } else if(msg.content.match(/^!roomAdhocWallRemove$/)) {
-            APIRoomManagement.adhocWallRemove(msg.selected, msg.who);
-        } else {
-            APIRoomManagement.sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', and 'roomAdhocWallRemove'.");
-        }
-    }
-});
-
+//run the script:
 on('ready',function() {
     APIRoomManagement.checkInstall();
+    APIRoomManagement.registerEventHandlers();
 });
