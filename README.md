@@ -44,7 +44,7 @@ If you want to change a side to a different type, remove the side and add a new 
 
 #Removing a room
 
-If you want to delete a room, select it and type __!roomRemove__.
+If you want to remove a room, select it and type __!roomRemove__.
 
 #Creating an adhoc wall
 
