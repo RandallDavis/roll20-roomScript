@@ -42,6 +42,34 @@ To remove a side, select the room and type __!roomRemoveSide \<side\>__.
 
 If you want to change a side to a different type, remove the side and add a new one afterward.
 
-#Deleting a room
+#Removing a room
 
 If you want to delete a room, select it and type __!roomRemove__.
+
+#Creating an adhoc wall
+
+An adhoc wall is a stand-alone wall that's not attached to a room. Adhoc walls block LoS. To create an adhoc wall, select an image that will become the wall and type __!roomAdhocWallAdd__.
+
+Adhoc walls and adhoc doors are used for complex situations where a wall shouldn't simply attach to a room's side, or a single centered door isn't enough. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.
+
+#Creating an adhoc door
+
+An adhoc door is a set of door images that can be placed anywhere, independent of a room. This allows you to use alternate door images than normally used with rooms, size doors as you see fit, and place them anywhere. They toggle the same as room doors do, and block LoS when the door is closed.
+
+Adhoc doors are created in two stages. First, select one of the door images and type __!roomAdhocDoorAdd \<type\>__. Allowed types are *open* and *closed*. Second, select both of the door images and type __!roomAdhocDoorAdd__; this will pair the second door up with the first and finish everything.
+
+Interacting with adhoc doors will toggle them from opened to closed, and vice versa.
+
+Adhoc walls and adhoc doors are used for complex situations where a wall shouldn't simply attach to a room's side, or a single centered door isn't enough. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.
+
+#Adhoc door move mode
+
+Because interaction with an adhoc door toggles it, doors cannot be repositioned, stretched, or rotated without triggering a toggle. In order to disable this temporarily, type __!roomAdhocDoorMove__ or __!roomAdhocDoorMove [on|off]__. Using *on* or *off* sets the move mode; if nothing is specified, the move mode toggles.
+
+#Removing an adhoc wall
+
+In order to remove an adhoc wall, select the wall and type __!roomAdhocWallRemove__.
+
+#Removing an adhoc door
+
+In order to remove an adhoc door, select the door and type __!roomAdhocDoorRemove__.
