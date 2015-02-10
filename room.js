@@ -569,6 +569,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return adhocWall;
     }
     
+    //determines if one (and only one) adhoc door is selected and returns it if so:
+    function selectedAdhocDoor(selected, who) {
+        var adhocDoor = selectedGraphic(selected, who);
+        
+        if(!adhocDoor) {
+            return;
+        }
+        
+        var gmNotes = adhocDoor.get("gmnotes");
+        
+        if(!gmNotes.match(/^\*adhocDoor\*/)) {
+            sendWhisper("API", who, "The selected object must be an adhoc door.");
+            return;
+        }
+        
+        return adhocDoor;
+    }
+    
     //determines if one (and only one) empty image is selected and returns it if so:
     function selectedEmptyImage(selected, who) {
         var pic = selectedGraphic(selected, who);
@@ -931,6 +949,31 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     }
     
+    //removes an adhoc door set:
+    function adhocDoorRemove(selected, who) {
+        var adhocDoor = selectedAdhocDoor(selected, who);
+        
+        if(adhocDoor) {
+            var gmNotes = adhocDoor.get("gmnotes");
+            var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
+            var idsToKill = [];
+            
+            for(var i = 0;i < sideMetas.length;i++) {
+                var sideMeta = sideMetas[i].substring(3).split('.');
+                for(var i2 = 0;i2 < sideMeta.length;i2++) {
+                    idsToKill.push(sideMeta[i2]);
+                }
+            }
+            
+            for(var i = 0;i < idsToKill.length;i++) {
+                trashObject(getObj("path", idsToKill[i]));
+                trashObject(getObj("graphic", idsToKill[i]));
+            }
+            
+            trashObject(adhocDoor);
+        }
+    }
+    
     //create the first door in an adhoc door set:
     function addhocDoorAdd(selected, who, type) {
         var adhocDoor = selectedEmptyImage(selected, who);
@@ -1132,8 +1175,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     sendWhisper("API", msg.who, "Expected syntax is '!roomAdhocDoorMove' or !roomAdhocDoorMove [on|off].");
                     return;
                 }
+            } else if(msg.content.match(/^!roomAdhocDoorRemove$/)) {
+                adhocDoorRemove(msg.selected, msg.who);
             } else {
-                sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', 'roomAdhocWallRemove', 'roomAdhocDoorAdd', and 'roomAdhocDoorMove'.");
+                sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', 'roomAdhocWallRemove', 'roomAdhocDoorAdd', 'roomAdhocDoorRemove', and 'roomAdhocDoorMove'.");
             }
         }
     }
