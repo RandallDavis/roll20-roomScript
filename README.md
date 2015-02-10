@@ -64,7 +64,7 @@ Adhoc walls and adhoc doors are used for complex situations where a wall shouldn
 
 #Adhoc door move mode
 
-Because interaction with an adhoc door toggles it, doors cannot be repositioned, stretched, or rotated without triggering a toggle. In order to disable this temporarily, type __!roomAdhocDoorMove__ or __!roomAdhocDoorMove [on|off]__. Using *on* or *off* sets the move mode; if nothing is specified, the move mode toggles.
+Because interaction with an adhoc door toggles it, doors cannot be repositioned, stretched, or rotated without triggering a toggle. In order to disable this temporarily, type __!roomAdhocDoorMove__ or __!roomAdhocDoorMove \<on|off\>__. Using *on* or *off* sets the move mode; if nothing is specified, the move mode toggles.
 
 #Removing an adhoc wall
 
