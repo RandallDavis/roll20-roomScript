@@ -4,8 +4,8 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 0.1,
-        schemaVersion = 0.1;
+    var version = 0.2,
+        schemaVersion = 0.2;
         
     function checkInstall() {
         if( ! _.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
@@ -14,7 +14,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 version: schemaVersion,
                 wallColor: "#00FF00",
                 doorOpenPicUrl: "",
-                doorClosedPicUrl: ""
+                doorClosedPicUrl: "",
+                adhocDoorMoveMode: 1,
             };
         }
     }
@@ -825,6 +826,74 @@ var APIRoomManagement = APIRoomManagement || (function() {
         adhocWall.set("gmnotes", newGmNotes);
     }
     
+    //draws an adhoc door:
+    function drawAdhocDoor(adhocDoor) {
+        var doorXY = getPoints(adhocDoor.get("width"), adhocDoor.get("height"), adhocDoor.get("rotation"), adhocDoor.get("left"), adhocDoor.get("top"));
+        var meta = (adhocDoor.get("gmnotes").match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
+        var newGmNotes = "*adhocDoor*%3Cbr%3E";
+        
+        //draw LoS wall if the adhoc wall isn't on the gm layer and it's a closed door:
+        if(adhocDoor.get("layer") != 'gmlayer' && meta[0] == "doorClosed") {
+            var wall;
+            
+            //draw a LoS wall through the longer dimension of the pic:
+            if(adhocDoor.get("width") > adhocDoor.get("height")) {
+                wall = createLosWall(adhocDoor, doorXY.midLeft, doorXY.midRight);
+            } else {
+                wall = createLosWall(adhocDoor, doorXY.topMid, doorXY.botMid);
+            }
+            
+            newGmNotes = newGmNotes + "*d*" + meta[0] + "." + meta[1] + "." + wall.id + "*%3Cbr%3E";
+        } else {
+            newGmNotes = newGmNotes + "*d*" + meta[0] + "." + meta[1] + ".*%3Cbr%3E";
+        }
+        
+        //delete old walls:
+        try {
+            trashObject(getObj("path", meta[2]));
+        } catch(e) {}
+        
+        //set the gmnotes:
+        adhocDoor.set("gmnotes", newGmNotes);
+        
+        //position the companion door if there is one:
+        var otherDoor = getObj("graphic", meta[1]);
+        if(otherDoor) {
+            otherDoor.set("height", adhocDoor.get("height") / 10000);
+            otherDoor.set("width", adhocDoor.get("width") / 10000);
+            otherDoor.set("top", adhocDoor.get("top"));
+            otherDoor.set("left", adhocDoor.get("left"));
+            otherDoor.set("rotation", adhocDoor.get("rotation"));
+            otherDoor.set("scale", adhocDoor.get("scale"));
+            otherDoor.set("layer", adhocDoor.get("layer"));
+        }
+    }
+    
+    //toggles and draws an adhoc door:
+    function toggleAdhocDoor(adhocDoor) {
+        var meta = (adhocDoor.get("gmnotes").match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
+        
+        //verify that the door is part of a set:
+        if(meta[1].length == 0) {
+            log("Attempt to toggle adhoc door that has no companion door. Aborting toggle.");
+            drawAdhocDoor(adhocDoor);
+            return;
+        }
+        
+        //delete LoS wall if there is one:
+        trashObject(getObj("path", meta[2]));
+        
+        //show the companion door and hide this one:
+        var otherDoor = getObj("graphic", meta[1]);
+        otherDoor.set("height", otherDoor.get("height") * 10000);
+        otherDoor.set("width", otherDoor.get("width") * 10000);
+        adhocDoor.set("height", otherDoor.get("height") / 10000);
+        adhocDoor.set("width", otherDoor.get("width") / 10000);
+        
+        //draw the other door:
+        drawAdhocDoor(otherDoor);
+    }
+    
     //turns an image into an adhoc wall:
     function adhocWallAdd(selected, who) {
         var adhocWall = selectedEmptyImage(selected, who);
@@ -862,6 +931,95 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     }
     
+    //create the first door in an adhoc door set:
+    function addhocDoorAdd(selected, who, type) {
+        var adhocDoor = selectedEmptyImage(selected, who);
+        
+        if(adhocDoor) {
+            //initialize adhoc door:
+            adhocDoor.set("layer", "map");
+            adhocDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + type + "..*%3Cbr%3E");
+            drawAdhocDoor(adhocDoor);
+        }
+    }
+    
+    //add the second door to an existing adhoc door to complete a set:
+    function addhocDoorPairAdd(selected, who) {
+        //verify that the expected objects are selected:
+        if(!selected || selected.length < 2) {
+            sendWhisper("API", who, "You need to have an adhoc door and a second image selected.");
+            return;
+        } else if(selected.length > 2) {
+            sendWhisper("API", who, "Only two image can be selected.");
+            return;
+        }
+        
+        var image1 = getObj("graphic", selected[0]._id);
+        var image2 = getObj("graphic", selected[1]._id);
+        var adhocDoor;
+        var newDoor;
+        
+        if(image1.get("gmnotes").match(/^\*adhocDoor\*/)) {
+            adhocDoor = image1;
+            newDoor = image2;
+        } else if(image2.get("gmnotes").match(/^\*adhocDoor\*/)) {
+            adhocDoor = image2;
+            newDoor = image1;
+        } else {
+            sendWhisper("API", who, "One of the selected images needs to be an adhoc door.");
+            return;
+        }
+        
+        if(newDoor.get("gmnotes").length > 0) {
+            sendWhisper("API", who, "The new adhoc door must be unused. This one has information in its gmnotes.");
+            return;
+        }
+        
+        var meta = (adhocDoor.get("gmnotes").match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
+        adhocDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + meta[0] + "." + newDoor.id + "." + meta[2] + "*%3Cbr%3E");
+        
+        //determine new door type:
+        var newDoorType;
+        switch(meta[0]) {
+            case "doorOpen":
+                newDoorType = "doorClosed";
+                break;
+            case "doorClosed":
+                newDoorType = "doorOpen";
+                break;
+            default:
+                log("Unexpected type of " + meta[0] + " found on the original adhoc door in addhocDoorPairAdd().");
+                return;
+        }
+        
+        //set up and hide the new door:
+        newDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + newDoorType + "." + adhocDoor.id + ".*%3Cbr%3E");
+        newDoor.set("height", adhocDoor.get("height") / 10000);
+        newDoor.set("width", adhocDoor.get("width") / 10000);
+        newDoor.set("top", adhocDoor.get("top"));
+        newDoor.set("left", adhocDoor.get("left"));
+        newDoor.set("rotation", adhocDoor.get("rotation"));
+        newDoor.set("scale", adhocDoor.get("scale"));
+        newDoor.set("layer", adhocDoor.get("layer"));
+    }
+    
+    //set adhoc door move mode:
+    function setAdhocDoorMoveMode(mode) {
+        switch(mode) {
+            case "on":
+                state.APIRoomManagement.adhocDoorMoveMode = 1;
+                break;
+            case "off":
+                state.APIRoomManagement.adhocDoorMoveMode = 0;
+                break;
+            case "toggle":
+                state.APIRoomManagement.adhocDoorMoveMode = (state.APIRoomManagement.adhocDoorMoveMode + 1) % 2;
+                break;
+            default:
+                log("Unexpected mode of " + mode + " in setAdhocDoorMoveMode().");
+        }
+    }
+    
     //whispers to a player:
     function sendWhisper(from, to, message) {
         sendChat(from, "/w " + to.split(" ")[0] + " " + message);  
@@ -875,6 +1033,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
             toggleDoor(obj);
         } else if(obj.get("gmnotes").match(/^\*adhocWall\*/)) {
             drawAdhocWall(obj);
+        } else if(obj.get("gmnotes").match(/^\*adhocDoor\*/)) {
+            if(state.APIRoomManagement.adhocDoorMoveMode == 1) {
+                drawAdhocDoor(obj);
+            } else {
+                toggleAdhocDoor(obj);
+            }
         }
     }
     
@@ -922,8 +1086,54 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 adhocWallAdd(msg.selected, msg.who);
             } else if(msg.content.match(/^!roomAdhocWallRemove$/)) {
                 adhocWallRemove(msg.selected, msg.who);
+            } else if(msg.content.match(/^!roomAdhocDoorAdd\s?/)) {
+                var chatCommand = msg.content.split(' ');
+                
+                if(chatCommand.length == 2) {
+                    //if there is a parameter, then this is the first door of an adhoc door set:
+                    switch(chatCommand[1]) {
+                        case "open":
+                            addhocDoorAdd(msg.selected, msg.who, "doorOpen");
+                            break;
+                        case "closed":
+                            addhocDoorAdd(msg.selected, msg.who, "doorClosed");
+                            break;
+                        default:
+                            sendWhisper("API", msg.who, "Expected door types are 'open' or 'closed'.");
+                            return;
+                    }
+                } else if(chatCommand.length == 1) {
+                    //if there is no parameter, then this is appending a second door to an adhoc door set:
+                    addhocDoorPairAdd(msg.selected, msg.who);
+                } else {
+                    sendWhisper("API", msg.who, "Expected syntax is '!roomAdhocDoorAdd [open|closed]' for the first adhoc door, or '!roomAdhocDoorAdd' to attach the second door.");
+                    return;
+                }
+            } else if(msg.content.match(/^!roomAdhocDoorMove\s?/)) {
+                var chatCommand = msg.content.split(' ');
+                
+                if(chatCommand.length == 2) {
+                    //if there is a parameter, then this should explicitly specify a move mode:
+                    switch(chatCommand[1]) {
+                        case "on":
+                            setAdhocDoorMoveMode("on");
+                            break;
+                        case "off":
+                            setAdhocDoorMoveMode("off");
+                            break;
+                        default:
+                            sendWhisper("API", msg.who, "Expected types are 'on' and 'off'.");
+                            return;
+                    }
+                } else if(chatCommand.length == 1) {
+                    //implied toggling of move mode:
+                    setAdhocDoorMoveMode("toggle");
+                } else {
+                    sendWhisper("API", msg.who, "Expected syntax is '!roomAdhocDoorMove' or !roomAdhocDoorMove [on|off].");
+                    return;
+                }
             } else {
-                sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', and 'roomAdhocWallRemove'.");
+                sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', 'roomAdhocWallRemove', 'roomAdhocDoorAdd', and 'roomAdhocDoorMove'.");
             }
         }
     }
@@ -943,7 +1153,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
 })();
 
 //run the script:
-on('ready',function() {
+on('ready', function() {
     APIRoomManagement.checkInstall();
     APIRoomManagement.registerEventHandlers();
 });
