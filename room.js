@@ -1096,7 +1096,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var text =
             '<div style="border: 1px solid black;background-color: #B266FF;">'
                 +'<div style="border: 1px solid black;font-weight: bold;border-bottom: 1px solid black;background-color: #6666FF;font-size: 115%;">'
-                	+header
+                	+'<div style="padding-left:3px;margin-top:3px;margin-bottom:3px;">'
+                        +header
+                    +'</div>'
             	+'</div>'
                 +'<div style="border: 1px solid black;background-color: #B266FF;padding: 3px 3px;">'
                 	+body;
