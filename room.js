@@ -4,7 +4,7 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 0.2,
+    var version = 0.3,
         schemaVersion = 0.2;
         
     function checkInstall() {
@@ -516,17 +516,17 @@ var APIRoomManagement = APIRoomManagement || (function() {
     //determines if one (and only one) graphic is selected and returns it if so:
     function selectedGraphic(selected, who) {
         if(!selected || selected.length < 1) {
-            sendWhisper("API", who, "You need to have an image selected.");
+            sendWhisper(who, "You need to have an image selected.");
             return;
         } else if(selected.length > 1) {
-            sendWhisper("API", who, "Only one image can be selected.");
+            sendWhisper(who, "Only one image can be selected.");
             return;
         }
         
         var graphic = getObj("graphic", selected[0]._id);
         
         if(!graphic) {
-            sendWhisper("API", who, "The selected object must be an image.");
+            sendWhisper(who, "The selected object must be an image.");
             return;
         }
         
@@ -544,7 +544,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var gmNotes = room.get("gmnotes");
         
         if(!gmNotes.match(/^\*room\*/)) {
-            sendWhisper("API", who, "The selected object must be a room.");
+            sendWhisper(who, "The selected object must be a room.");
             return;
         }
         
@@ -562,7 +562,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var gmNotes = adhocWall.get("gmnotes");
         
         if(!gmNotes.match(/^\*adhocWall\*/)) {
-            sendWhisper("API", who, "The selected object must be an adhoc wall.");
+            sendWhisper(who, "The selected object must be an adhoc wall.");
             return;
         }
         
@@ -580,7 +580,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var gmNotes = adhocDoor.get("gmnotes");
         
         if(!gmNotes.match(/^\*adhocDoor\*/)) {
-            sendWhisper("API", who, "The selected object must be an adhoc door.");
+            sendWhisper(who, "The selected object must be an adhoc door.");
             return;
         }
         
@@ -598,7 +598,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var gmNotes = pic.get("gmnotes");
         
         if(gmNotes) {
-            sendWhisper("API", who, "The selected object must be a picture that isn't already used for anything. The one you have selected has gmnotes.");
+            sendWhisper(who, "The selected object must be a picture that isn't already used for anything. The one you have selected has gmnotes.");
             return;
         }
         
@@ -653,7 +653,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case "r":
                 break;
             default:
-                sendWhisper("API", who, "Side must be 't', 'b', 'l', or 'r'.");
+                sendWhisper(who, "Side must be 't', 'b', 'l', or 'r'.");
                 return;
         }
         
@@ -665,7 +665,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case "doorOpen":
                 break;
             default:
-                sendWhisper("API", who, "Type must be 'empty', 'wall', 'doorClosed', or 'doorOpen'.");
+                sendWhisper(who, "Type must be 'empty', 'wall', 'doorClosed', or 'doorOpen'.");
                 return;
         }
         
@@ -714,7 +714,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             }
             
             if(!sideMeta) {
-                sendWhisper("API", who, "The side '" + side + "' cannot be found in the selected room.");
+                sendWhisper(who, "The side '" + side + "' cannot be found in the selected room.");
                 return;
             }
             
@@ -990,10 +990,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
     function addhocDoorPairAdd(selected, who) {
         //verify that the expected objects are selected:
         if(!selected || selected.length < 2) {
-            sendWhisper("API", who, "You need to have an adhoc door and a second image selected.");
+            sendWhisper(who, "You need to have an adhoc door and a second image selected.");
             return;
         } else if(selected.length > 2) {
-            sendWhisper("API", who, "Only two image can be selected.");
+            sendWhisper(who, "Only two image can be selected.");
             return;
         }
         
@@ -1009,12 +1009,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
             adhocDoor = image2;
             newDoor = image1;
         } else {
-            sendWhisper("API", who, "One of the selected images needs to be an adhoc door.");
+            sendWhisper(who, "One of the selected images needs to be an adhoc door.");
             return;
         }
         
         if(newDoor.get("gmnotes").length > 0) {
-            sendWhisper("API", who, "The new adhoc door must be unused. This one has information in its gmnotes.");
+            sendWhisper(who, "The new adhoc door must be unused. This one has information in its gmnotes.");
             return;
         }
         
@@ -1064,8 +1064,284 @@ var APIRoomManagement = APIRoomManagement || (function() {
     }
     
     //whispers to a player:
-    function sendWhisper(from, to, message) {
-        sendChat(from, "/w " + to.split(" ")[0] + " " + message);  
+    function sendWhisper(to, message) {
+        sendChat("Room API", "/w " + to.split(" ")[0] + " " + message);  
+    }
+    
+    //character converter, credits to The Aaron from https://github.com/shdwjk/Roll20API/blob/master/APIHeartBeat/APIHeartBeat.js
+    function ch(c) {
+        var entities = {
+            '<' : 'lt',
+            '>' : 'gt',
+            "'" : '#39',
+            '@' : '#64',
+            '{' : '#123',
+            '|' : '#124',
+            '}' : '#125',
+            '[' : '#91',
+            ']' : '#93',
+            '"' : 'quot',
+            '-' : 'mdash',
+            ' ' : 'nbsp'
+        };
+
+        if(_.has(entities,c) ){
+            return ('&'+entities[c]+';');
+        }
+        return '';
+    }
+    
+    //help builder:
+    function displayHelp(who, header, body, nextSteps) {
+        var text =
+            '<div style="border: 1px solid black;background-color: #B266FF;">'
+                +'<div style="border: 1px solid black;font-weight: bold;border-bottom: 1px solid black;background-color: #6666FF;font-size: 115%;">'
+                	+header
+            	+'</div>'
+                +'<div style="border: 1px solid black;background-color: #B266FF;padding: 3px 3px;">'
+                	+body;
+                    
+        if(nextSteps) {
+            text = text
+                +'<div style="padding-left:10px;margin-top:3px;margin-bottom:3px;">'
+                    +'<div style="border-top: 1px solid #6666FF;margin-top:10px;border-bottom: 1px solid #6666FF;">'
+                        +'<div style="margin-top:10px;"></div>'
+                        +nextSteps
+                    +'</div>'
+                +'</div>';
+        }
+        
+        text = text
+                +'</div>'
+            +'</div>';
+        
+        sendWhisper(who, text);
+    }
+    
+    //general help:
+    function help(who, topic) {
+        switch(topic) {
+            case "room":
+            case "rooms":
+                displayHelp(who, 'Room API - Rooms',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Rooms are images that are managed by the API.</p>'
+                        +'<p>A room has four '+ch("'")+'sides'+ch("'")+': <b>t</b>(op), <b>b</b>(ottom), <b>l</b>(eft), and <b>r</b>(ight).</p>'
+                        +'<p>Each side can be of the following types:'
+                            +'<ul>'
+                                +'<li><b>wall</b> - which blocks LoS</li>'
+                                +'<li><b>empty</b> - which doesn'+ch("'")+'t block LoS</li>'
+                                +'<li><b>doorClosed</b> - which blocks LoS and has a closed door image</li>'
+                                +'<li><b>doorOpen</b> - which blocks LoS except where the door is and has an open door image</li>'
+                            +'</ul>'
+                        +'</p>'
+                        +'<p>Doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
+                        +'<p>Rooms can be moved, rotated, and resized. The API will make sure that everything is drawn properly.</p>'
+                        +'<p>Door images are created by the API, but their image sources have to be set up <i>(see '+ch("'")+'help settings'+ch("'")+')</i>.</p>'
+                	+'</div>',
+                     
+                    '<b>Help Sub-topics</b>'
+                    +'<ul>'
+                        +'<li><u>settings</u></li>'
+                        +'<li><i>roomAdd</i></li>'
+                        +'<li><i>roomRemove</i></li>'
+                        +'<li><i>roomSideAdd</i></li>'
+                        +'<li><i>roomSideRemove</i></li>'
+                        +'<li><i>roomDoorImageSet</i></li>'
+                    +'</ul>'
+                );
+                break;
+            case "adhoc":
+            case "adhocs":
+                displayHelp(who, 'Room API - Adhoc',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Adhoc walls and doors are individually placed objects that are not tied to a room.</p>'
+                        +'<p>Adhoc walls and adhoc doors are used for complex situations where a wall shouldn'+ch("'")+'t simply attach to a room'+ch("'")+'s side, or a single centered door isn'+ch("'")+'t enough. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.</p>'
+                    +'</div>',
+                     
+                    '<b>Help Sub-topics</b>'
+                    +'<ul>'
+                        +'<li><i>adhocWallAdd</i></li>'
+                        +'<li><i>adhocWallRemove</i></li>'
+                        +'<li><i>adhocDoorAdd</i></li>'
+                        +'<li><i>adhocDoorRemove</i></li>'
+                        +'<li><i>adhocDoorMove</i></li>'
+                    +'</ul>'
+                );
+                break;
+            case "command":
+            case "commands":
+                displayHelp(who, 'Room API - Commands',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<b>Room Commands</b>'
+                        +'<ul>'
+                            +'<li><i>roomAdd</i></li>'
+                            +'<li><i>roomRemove</i></li>'
+                            +'<li><i>roomSideAdd</i></li>'
+                            +'<li><i>roomSideRemove</i></li>'
+                        +'</ul>'
+                        +'<b>Adhoc Commands</b>'
+                        +'<ul>'
+                            +'<li><i>adhocWallAdd</i></li>'
+                            +'<li><i>adhocWallRemove</i></li>'
+                            +'<li><i>adhocDoorAdd</i></li>'
+                            +'<li><i>adhocDoorRemove</i></li>'
+                        +'</ul>'
+                        +'<b>Setting Commands</b>'
+                        +'<ul>'
+                            +'<li><i>roomDoorImageSet</i></li>'
+                            +'<li><i>adhocDoorMove</i></li>'
+                        +'</ul>'
+                        +'<b>Miscellaneous Commands</b>'
+                        +'<ul>'
+                            +'<li><i>help</i></li>'
+                        +'</ul>'
+                    +'</div>'
+                );
+                break;
+            case "help":
+                displayHelp(who, 'Room API - Help',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>This help mechanism should tell you everything you need to know about the Room API.</p>'
+                        +'<ul>'
+                            +'<li><b>!api-room help</b> will give you a list of help topics.</li>'
+                            +'<li><b>!api-room help '+ch('<')+'topic'+ch('>')+'</b> gives information on a topic.</li>'
+                            +'<li><b>!api-room help '+ch('<')+'command'+ch('>')+'</b> should give you any details you need on specific commands.</li>'
+                        +'</ul>'
+                    +'</div>'
+                );
+                break;
+            case "clean":
+            case "cleanup":
+                displayHelp(who, 'Room API - Cleanup',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Room API discards objects that are no longer in use in the very top left corner of the gm layer. These discarded objects cannot be seen by players. Dynamic lighting walls are visible, but other objects (such as discarded doors or rooms) will be too small to see.</p>'
+                        +'<p>All objects are perfectly piled on top of each other so that you can select them all at once and delete them. It is recommended that this is done periodically.</p>'
+                    +'</div>'
+                );
+                break;
+            case "settings":
+                displayHelp(who, 'Room API - Settings',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Certain settings are stored in the API to control its behavior.</p>'
+                    +'</div>',
+                     
+                    '<b>Help Sub-topics</b>'
+                    +'<ul>'
+                        +'<li><i>roomDoorImageSet</i></li>'
+                        +'<li><i>adhocDoorMove</i></li>'
+                    +'</ul>'
+                );
+                break;
+            case "roomAdd":
+                displayHelp(who, 'Room API - <i>roomAdd</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Turns an image into a room.</i></b></p>'
+                        +'<p>To add a room, select an image, and type this command. As soon as the image becomes a room, it is pushed to the Maps layer as a convenience and is from then on managed by the API. The room can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
+                    +'</div>'
+                );
+                break;
+            case "roomRemove":
+                displayHelp(who, 'Room API - <i>roomRemove</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Removes a room and any of its attached objects.</i></b></p>'
+                        +'<p>To remove a room, select it and type this command.</p>'
+                    +'</div>'
+                );
+                break;
+            case "roomSideAdd":
+                displayHelp(who, 'Room API - <i>roomSideAdd '+ch('<')+'side'+ch('>')+' '+ch('<')+'type'+ch('>')+'</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Adds a side to a room.</i></b></p>'
+                        +'<p><b>'+ch('<')+'side'+ch('>')+'</b>: <b>t</b>(op), <b>b</b>(ottom), <b>l</b>(eft), or <b>r</b>(ight).</p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>wall</b>, <b>empty</b>, <b>doorClosed</b>, or <b>doorOpen</b>.</p>'
+                        +'<p>To add a side to a room, select it and type this command.</p>'
+                    +'</div>'
+                );
+                break;
+            case "roomSideRemove":
+                displayHelp(who, 'Room API - <i>roomSideRemove '+ch('<')+'side'+ch('>')+'</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Removes a side from a room and any of the side'+ch("'")+'s attached objects.</i></b></p>'
+                        +'<p><b>'+ch('<')+'side'+ch('>')+'</b>: <b>t</b>(op), <b>b</b>(ottom), <b>l</b>(eft), or <b>r</b>(ight).</p>'
+                        +'<p>To remove a side from a room, select the room and type this command.</p>'
+                    +'</div>'
+                );
+                break;
+            case "adhocWallAdd":
+                displayHelp(who, 'Room API - <i>adhocWallAdd</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Turns an image into an adhoc wall.</i></b></p>'
+                        +'<p>To add an adhoc wall, select an image, and type this command. As soon as the image becomes an adhoc wall, it is pushed to the Maps layer as a convenience and is from then on managed by the API. It can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
+                        +'<p>A LoS wall will be drawn through the length of the wall.</p>'
+                    +'</div>'
+                );
+                break;
+            case "adhocWallRemove":
+                displayHelp(who, 'Room API - <i>adhocWallRemove</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Removes an adhoc wall and any of its attached objects.</i></b></p>'
+                        +'<p>To remove an adhoc wall, select it and type this command.</p>'
+                    +'</div>'
+                );
+                break;
+            case "adhocDoorAdd":
+                displayHelp(who, 'Room API - <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'</i> and <i>adhocDoorAdd</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Creates an adhoc door in two stages.</i></b></p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>doorClosed</b> or <b>doorOpen</b>.</p>'
+                        +'<p>Adhoc doors are created in two stages. To create the first adhoc door image, select it and type <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'.</i></p>'
+                        +'<p>To create the second adhoc door, just select the previous adhoc door image and the new image, and type <i>adhocDoorAdd</i>.</p>'
+                        +'<p>A LoS wall will be drawn through the door when it is closed.</p>'
+                        +'<p>Adhoc doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
+                        +'<p>Adhoc doors can be moved, rotated, and resized. The API will make sure that everything is drawn properly.</p>'
+                    +'</div>'
+                );
+                break;
+            case "adhocDoorRemove":
+                displayHelp(who, 'Room API - <i>adhocDoorRemove</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Removes an adhoc door and any of its attached objects.</i></b></p>'
+                        +'<p>To remove an adhoc door, select it and type this command.</p>'
+                    +'</div>'
+                );
+                break;
+            case "roomDoorImageSet":
+                displayHelp(who, 'Room API - <i>roomDoorImageSet '+ch('<')+'type'+ch('>')+'</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Sets door images that will be created when door sides are added to rooms.</i></b></p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>doorClosed</b> or <b>doorOpen</b>.</p>'
+                        +'<p>In order to set the door images that will be created, put an image that you like on the page, select it, and type this command.</p>'
+                    +'</div>'
+                );
+                break;
+            case "adhocDoorMove":
+                displayHelp(who, 'Room API - <i>adhocDoorMove '+ch('<')+'mode'+ch('>')+'</i> and <i>adhocDoorMove</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Sets or toggles the adhocDoorMove setting.</i></b></p>'
+                        +'<p><b>'+ch('<')+'mode'+ch('>')+'</b>: <b>on</b> or <b>off</b>.</p>'
+                        +'<p>Running this command without an argument toggles the adhocDoorMove mode.</p>'
+                        +'<p>When the adhocDoorMove mode is <i>on</i>, interacting with adhoc doors does not toggle them. This is used to reposition, rotate, and resize adhoc doors.</p>'
+                    +'</div>'
+                );
+                break;
+            default:
+                displayHelp(who, 'Room API v'+version,
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                    	+'<p>.</p>'
+                	+'</div>',
+                    
+                	'<b>Help Sub-topics</b>'
+                    +'<ul>'
+                        +'<li><u>rooms</u></li>'
+                        +'<li><u>adhoc</u></li>'
+                        +'<li><u>cleanup</u></li>'
+                        +'<li><u>settings</u></li>'
+                        +'<li><u>help</u></li>'
+                        +'<li><u>commands</u></li>'
+                    +'</ul>'
+                );
+        }
     }
     
     //handle any changes to objects:
@@ -1087,98 +1363,109 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //handle user-input commands:
     function handleUserInput(msg) {
-        if(msg.type == "api" && msg.content.match(/^!room/)) {
-            if(msg.content.match(/^!roomAdd$/)) {
-                roomAdd(msg.selected, msg.who);
-            } else if(msg.content.match(/^!roomRemove$/)) {
-                roomRemove(msg.selected, msg.who);
-            } else if(msg.content.match(/^!roomSideAdd\s?/)) {
-                var chatCommand = msg.content.split(' ');
-                if(chatCommand.length != 3) {
-                    sendWhisper("API", msg.who, "Expected syntax is '!roomSideAdd [side] [type]'.");
-                    return;
-                }
-                chatCommand = msg.content.replace("!roomSideAdd ", "");
-                roomSideAdd(chatCommand, msg.selected, msg.who);
-            } else if(msg.content.match(/^!roomSideRemove\s?/)) {
-                var chatCommand = msg.content.split(' ');
-                if(chatCommand.length != 2) {
-                    sendWhisper("API", msg.who, "Expected syntax is '!roomSideRemove [side]'.");
-                    return;
-                }
-                chatCommand = msg.content.replace("!roomSideRemove ", "");
-                roomSideRemove(chatCommand, msg.selected, msg.who);
-            } else if(msg.content.match(/^!roomDoorImageSet\s?/)) {
-                var chatCommand = msg.content.split(' ');
-                if(chatCommand.length != 2) {
-                    sendWhisper("API", msg.who, "Expected syntax is '!roomDoorImageSet [open|closed]'.");
-                    return;
-                }
+        if(msg.type == "api" && msg.content.match(/^!api-room/)) {
+            var chatCommand = msg.content.split(' ');
+            if(chatCommand.length == 1) {
+                help(msg.who, "commands");
+            } else {
                 switch(chatCommand[1]) {
-                    case "open":
-                        setDoorUrl(msg.selected, msg.who, "doorOpen");
+                    case "help":
+                        if(chatCommand.length <= 2) {
+                            help(msg.who, "");
+                        } else {
+                            help(msg.who, chatCommand[2]);
+                        }
                         break;
-                    case "closed":
-                        setDoorUrl(msg.selected, msg.who, "doorClosed");
+                    case "roomAdd":
+                        roomAdd(msg.selected, msg.who);
+                        break;
+                    case "roomRemove":
+                        roomRemove(msg.selected, msg.who);
+                        break;
+                    case "roomSideAdd":
+                        if(chatCommand.length != 4) {
+                            help(msg.who, "roomSideAdd");
+                        } else {
+                            chatCommand = msg.content.replace("!api-room roomSideAdd ", "");
+                            roomSideAdd(chatCommand, msg.selected, msg.who);
+                        }
+                        break;
+                    case "roomSideRemove":
+                        if(chatCommand.length != 3) {
+                            help(msg.who, "roomSideRemove");
+                        } else {
+                            chatCommand = msg.content.replace("!api-room roomSideRemove ", "");
+                            roomSideRemove(chatCommand, msg.selected, msg.who);
+                        }
+                        break;
+                    case "roomDoorImageSet":
+                        if(chatCommand.length != 3) {
+                            help(msg.who, "roomDoorImageSet");
+                        } else {
+                            switch(chatCommand[2]) {
+                                case "open":
+                                    setDoorUrl(msg.selected, msg.who, "doorOpen");
+                                    break;
+                                case "closed":
+                                    setDoorUrl(msg.selected, msg.who, "doorClosed");
+                                    break;
+                                default:
+                                    help(msg.who, "roomDoorImageSet");
+                            }
+                        }
+                        break;
+                    case "adhocWallAdd":
+                        adhocWallAdd(msg.selected, msg.who);
+                        break;
+                    case "adhocWallRemove":
+                        adhocWallRemove(msg.selected, msg.who);
+                        break;
+                    case "adhocDoorAdd":
+                        if(chatCommand.length == 3) {
+                            //if there is a parameter, then this is the first door of an adhoc door set:
+                            switch(chatCommand[2]) {
+                                case "open":
+                                    addhocDoorAdd(msg.selected, msg.who, "doorOpen");
+                                    break;
+                                case "closed":
+                                    addhocDoorAdd(msg.selected, msg.who, "doorClosed");
+                                    break;
+                                default:
+                                    help(msg.who, "adhocDoorAdd");
+                            }
+                        } else if(chatCommand.length == 2) {
+                            //if there is no parameter, then this is appending a second door to an adhoc door set:
+                            addhocDoorPairAdd(msg.selected, msg.who);
+                        } else {
+                            help(msg.who, "adhocDoorAdd");
+                        }
+                        break;
+                    case "adhocDoorMove":
+                        if(chatCommand.length == 3) {
+                            //if there is a parameter, then this should explicitly specify a move mode:
+                            switch(chatCommand[2]) {
+                                case "on":
+                                    setAdhocDoorMoveMode("on");
+                                    break;
+                                case "off":
+                                    setAdhocDoorMoveMode("off");
+                                    break;
+                                default:
+                                    help(msg.who, "adhocDoorMove");
+                            }
+                        } else if(chatCommand.length == 2) {
+                            //implied toggling of move mode:
+                            setAdhocDoorMoveMode("toggle");
+                        } else {
+                            help(msg.who, "adhocDoorMove");
+                        }
+                        break;
+                    case "adhocDoorRemove":
+                        adhocDoorRemove(msg.selected, msg.who);
                         break;
                     default:
-                        sendWhisper("API", msg.who, "Expected door types are 'open' or 'closed'.");
-                        return;
+                        help(msg.who, "");
                 }
-            } else if(msg.content.match(/^!roomAdhocWallAdd$/)) {
-                adhocWallAdd(msg.selected, msg.who);
-            } else if(msg.content.match(/^!roomAdhocWallRemove$/)) {
-                adhocWallRemove(msg.selected, msg.who);
-            } else if(msg.content.match(/^!roomAdhocDoorAdd\s?/)) {
-                var chatCommand = msg.content.split(' ');
-                
-                if(chatCommand.length == 2) {
-                    //if there is a parameter, then this is the first door of an adhoc door set:
-                    switch(chatCommand[1]) {
-                        case "open":
-                            addhocDoorAdd(msg.selected, msg.who, "doorOpen");
-                            break;
-                        case "closed":
-                            addhocDoorAdd(msg.selected, msg.who, "doorClosed");
-                            break;
-                        default:
-                            sendWhisper("API", msg.who, "Expected door types are 'open' or 'closed'.");
-                            return;
-                    }
-                } else if(chatCommand.length == 1) {
-                    //if there is no parameter, then this is appending a second door to an adhoc door set:
-                    addhocDoorPairAdd(msg.selected, msg.who);
-                } else {
-                    sendWhisper("API", msg.who, "Expected syntax is '!roomAdhocDoorAdd [open|closed]' for the first adhoc door, or '!roomAdhocDoorAdd' to attach the second door.");
-                    return;
-                }
-            } else if(msg.content.match(/^!roomAdhocDoorMove\s?/)) {
-                var chatCommand = msg.content.split(' ');
-                
-                if(chatCommand.length == 2) {
-                    //if there is a parameter, then this should explicitly specify a move mode:
-                    switch(chatCommand[1]) {
-                        case "on":
-                            setAdhocDoorMoveMode("on");
-                            break;
-                        case "off":
-                            setAdhocDoorMoveMode("off");
-                            break;
-                        default:
-                            sendWhisper("API", msg.who, "Expected types are 'on' and 'off'.");
-                            return;
-                    }
-                } else if(chatCommand.length == 1) {
-                    //implied toggling of move mode:
-                    setAdhocDoorMoveMode("toggle");
-                } else {
-                    sendWhisper("API", msg.who, "Expected syntax is '!roomAdhocDoorMove' or !roomAdhocDoorMove [on|off].");
-                    return;
-                }
-            } else if(msg.content.match(/^!roomAdhocDoorRemove$/)) {
-                adhocDoorRemove(msg.selected, msg.who);
-            } else {
-                sendWhisper("API", msg.who, "Unknown API command. The known ones are: 'roomAdd', 'roomRemove', 'roomSideAdd', 'roomSideRemove', 'roomDoorImageSet', 'roomAdhocWallAdd', 'roomAdhocWallRemove', 'roomAdhocDoorAdd', 'roomAdhocDoorRemove', and 'roomAdhocDoorMove'.");
             }
         }
     }
