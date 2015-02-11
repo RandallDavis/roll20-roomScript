@@ -1289,7 +1289,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 displayHelp(who, 'Room API - <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'</i> and <i>adhocDoorAdd</i>',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p><b><i>Creates an adhoc door in two stages.</i></b></p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>doorClosed</b> or <b>doorOpen</b>.</p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>closed</b> or <b>open</b>.</p>'
                         +'<p>Adhoc doors are created in two stages. To create the first adhoc door image, select it and type <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'.</i></p>'
                         +'<p>To create the second adhoc door, just select the previous adhoc door image and the new image, and type <i>adhocDoorAdd</i>.</p>'
                         +'<p>A LoS wall will be drawn through the door when it is closed.</p>'
@@ -1310,7 +1310,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 displayHelp(who, 'Room API - <i>roomDoorImageSet '+ch('<')+'type'+ch('>')+'</i>',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p><b><i>Sets door images that will be created when door sides are added to rooms.</i></b></p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>doorClosed</b> or <b>doorOpen</b>.</p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>closed</b> or <b>open</b>.</p>'
                         +'<p>In order to set the door images that will be created, put an image that you like on the page, select it, and type this command.</p>'
                     +'</div>'
                 );
