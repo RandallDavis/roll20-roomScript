@@ -1137,8 +1137,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                                 +'<li><b>doorOpen</b> - which blocks LoS except where the door is and has an open door image</li>'
                             +'</ul>'
                         +'</p>'
-                        +'<p>Doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
                         +'<p>Rooms can be moved, rotated, and resized. The API will make sure that everything is drawn properly.</p>'
+                        +'<p>Doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
                         +'<p>Door images are created by the API, but their image sources have to be set up <i>(see '+ch("'")+'help settings'+ch("'")+')</i>.</p>'
                 	+'</div>',
                      
@@ -1158,7 +1158,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 displayHelp(who, 'Room API - Adhoc',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Adhoc walls and doors are individually placed objects that are not tied to a room.</p>'
-                        +'<p>Adhoc walls and adhoc doors are used for complex situations where a wall shouldn'+ch("'")+'t simply attach to a room'+ch("'")+'s side, or a single centered door isn'+ch("'")+'t enough. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.</p>'
+                        +'<p>Adhoc walls and adhoc doors are used for complex situations where a wall shouldn'+ch("'")+'t simply attach to a room'+ch("'")+'s side, a single centered door isn'+ch("'")+'t enough, or alternate door images or door shapes are needed. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.</p>'
                     +'</div>',
                      
                     '<b>Help Sub-topics</b>'
@@ -1291,7 +1291,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 displayHelp(who, 'Room API - <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'</i> and <i>adhocDoorAdd</i>',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p><b><i>Creates an adhoc door in two stages.</i></b></p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>closed</b> or <b>open</b>.</p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>open</b> or <b>closed</b>.</p>'
                         +'<p>Adhoc doors are created in two stages. To create the first adhoc door image, select it and type <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'.</i></p>'
                         +'<p>To create the second adhoc door, just select the previous adhoc door image and the new image, and type <i>adhocDoorAdd</i>.</p>'
                         +'<p>A LoS wall will be drawn through the door when it is closed.</p>'
@@ -1312,7 +1312,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 displayHelp(who, 'Room API - <i>roomDoorImageSet '+ch('<')+'type'+ch('>')+'</i>',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p><b><i>Sets door images that will be created when door sides are added to rooms.</i></b></p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>closed</b> or <b>open</b>.</p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>open</b> or <b>closed</b>.</p>'
                         +'<p>In order to set the door images that will be created, put an image that you like on the page, select it, and type this command.</p>'
                     +'</div>'
                 );
