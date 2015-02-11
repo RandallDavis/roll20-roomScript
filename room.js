@@ -1328,7 +1328,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             default:
                 displayHelp(who, 'Room API v'+version,
                     '<div style="padding-left:10px;margin-bottom:3px;">'
-                    	+'<p>.</p>'
+                    	+'<p>This is an API for managing rooms, so that you can piece maps together out of various rooms without having to worry about dynamic lighting or doors - the goal of the API is that those things are handled for you in a natural and powerful way.</p>'
                 	+'</div>',
                     
                 	'<b>Help Sub-topics</b>'
