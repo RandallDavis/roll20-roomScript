@@ -1357,7 +1357,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 displayHelp(who, 'Room API - <i>setDoorPrivsDefault '+ch('<')+'privs'+ch('>')+'</i>',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p><b><i>Sets the default for who should be able to control toggling doors.</i></b></p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>gm</b> or <b>players</b>.</p>'
+                        +'<p><b>'+ch('<')+'privs'+ch('>')+'</b>: <b>gm</b> or <b>players</b>.</p>'
                     +'</div>'
                 );
                 break;
