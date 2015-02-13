@@ -4,8 +4,8 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 0.3,
-        schemaVersion = 0.2;
+    var version = 0.4,
+        schemaVersion = 0.3;
         
     function checkInstall() {
         if( ! _.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
@@ -16,6 +16,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 doorOpenPicUrl: "",
                 doorClosedPicUrl: "",
                 adhocDoorMoveMode: 1,
+                doorPrivsDefault: 0, //0 = gm only, 1 = all players
             };
         }
     }
@@ -320,6 +321,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 pic.set("gmnotes", "*" + type + "*%3Cbr%3E*p*" + room.id + "*%3Cbr%3E");
                 pic.set("isdrawing", true);
                 pic.set("layer", room.get("layer"));
+                if(state.APIRoomManagement.doorPrivsDefault == 1) {
+                    pic.set("controlledby", "all");
+                }
                 toFront(pic);
             } else {
                 log("Unable to claim newly created picture.");
@@ -381,7 +385,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         //position the open door image:
         if(doorOpenPic) {
-            doorOpenPic.set("layer", room.get("layer"));
+            if(doorOpenPic.get("controlledby").match(/^all/) && room.get("layer") != "gmlayer") {
+                doorOpenPic.set("layer", "objects");
+            } else {
+                doorOpenPic.set("layer", room.get("layer"));
+            }
             doorOpenPic.set("rotation", room.get("rotation") + wallRotation + 90);
             doorOpenPic.set("top", doorPosition.y);
             doorOpenPic.set("left", doorPosition.x);
@@ -389,7 +397,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         //position the closed door image:
         if(doorClosedPic) {
-            doorClosedPic.set("layer", room.get("layer"));
+            if(doorClosedPic.get("controlledby").match(/^all/) && room.get("layer") != "gmlayer") {
+                doorClosedPic.set("layer", "objects");
+            } else {
+                doorClosedPic.set("layer", room.get("layer"));
+            }
             doorClosedPic.set("rotation", room.get("rotation") + wallRotation + 90);
             doorClosedPic.set("top", doorPosition.y);
             doorClosedPic.set("left", doorPosition.x);
@@ -1034,8 +1046,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 return;
         }
         
-        //move the first door to the map layer:
-        adhocDoor.set("layer", "map");
+        if(state.APIRoomManagement.doorPrivsDefault == 0) {
+            adhocDoor.set("layer", "map");
+        } else {
+            adhocDoor.set("controlledby", "all");
+            adhocDoor.set("layer", "objects");
+        }
         
         //set up and hide the new door:
         newDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + newDoorType + "." + adhocDoor.id + ".*%3Cbr%3E");
@@ -1046,6 +1062,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         newDoor.set("rotation", adhocDoor.get("rotation"));
         newDoor.set("scale", adhocDoor.get("scale"));
         newDoor.set("layer", adhocDoor.get("layer"));
+        newDoor.set("controlledby", adhocDoor.get("controlledby"));
     }
     
     //set adhoc door move mode:
@@ -1062,6 +1079,20 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 log("Unexpected mode of " + mode + " in setAdhocDoorMoveMode().");
+        }
+    }
+    
+    //set default for players being able to control doors:
+    function setDoorPrivsDefault(priv) {
+        switch(priv) {
+            case "gm":
+                state.APIRoomManagement.doorPrivsDefault = 0;
+                break;
+            case "players":
+                state.APIRoomManagement.doorPrivsDefault = 1;
+                break;
+            default:
+                log("Unexpected privledge value of " + priv + " in setDoorPrivsDefault().");
         }
     }
     
@@ -1152,6 +1183,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<li><i>roomSideAdd</i></li>'
                         +'<li><i>roomSideRemove</i></li>'
                         +'<li><i>roomDoorImageSet</i></li>'
+                        +'<li><i>setDoorPrivsDefault</i></li>'
                     +'</ul>'
                 );
                 break;
@@ -1194,6 +1226,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<b>Setting Commands</b>'
                         +'<ul>'
                             +'<li><i>roomDoorImageSet</i></li>'
+                            +'<li><i>setDoorPrivsDefault</i></li>'
                             +'<li><i>adhocDoorMove</i></li>'
                         +'</ul>'
                         +'<b>Miscellaneous Commands</b>'
@@ -1233,6 +1266,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     '<b>Help Sub-topics</b>'
                     +'<ul>'
                         +'<li><i>roomDoorImageSet</i></li>'
+                        +'<li><i>setDoorPrivsDefault</i></li>'
                         +'<li><i>adhocDoorMove</i></li>'
                     +'</ul>'
                 );
@@ -1316,6 +1350,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p><b><i>Sets door images that will be created when door sides are added to rooms.</i></b></p>'
                         +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>open</b> or <b>closed</b>.</p>'
                         +'<p>In order to set the door images that will be created, put an image that you like on the page, select it, and type this command.</p>'
+                    +'</div>'
+                );
+                break;
+            case "setDoorPrivsDefault":
+                displayHelp(who, 'Room API - <i>setDoorPrivsDefault '+ch('<')+'privs'+ch('>')+'</i>',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p><b><i>Sets the default for who should be able to control toggling doors.</i></b></p>'
+                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>gm</b> or <b>players</b>.</p>'
                     +'</div>'
                 );
                 break;
@@ -1467,6 +1509,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     case "adhocDoorRemove":
                         adhocDoorRemove(msg.selected, msg.who);
+                        break;
+                    case "setDoorPrivsDefault":
+                        if(chatCommand.length != 3) {
+                            help(msg.who, "setDoorPrivsDefault");
+                        } else {
+                            setDoorPrivsDefault(chatCommand[2]);
+                        }
                         break;
                     default:
                         help(msg.who, "");
