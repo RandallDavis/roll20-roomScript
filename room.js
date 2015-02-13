@@ -980,7 +980,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         if(adhocDoor) {
             //initialize adhoc door:
-            adhocDoor.set("layer", "map");
             adhocDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + type + "..*%3Cbr%3E");
             drawAdhocDoor(adhocDoor);
         }
@@ -1034,6 +1033,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 log("Unexpected type of " + meta[0] + " found on the original adhoc door in addhocDoorPairAdd().");
                 return;
         }
+        
+        //move the first door to the map layer:
+        adhocDoor.set("layer", "map");
         
         //set up and hide the new door:
         newDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + newDoorType + "." + adhocDoor.id + ".*%3Cbr%3E");
