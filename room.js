@@ -1085,7 +1085,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     }
     
     //set default for players being able to control doors:
-    function setDoorPrivsDefault(priv) {
+    function setDoorPrivsDefault(who, priv) {
         switch(priv) {
             case "gm":
                 state.APIRoomManagement.doorPrivsDefault = 0;
@@ -1094,7 +1094,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 state.APIRoomManagement.doorPrivsDefault = 1;
                 break;
             default:
-                log("Unexpected privledge value of " + priv + " in setDoorPrivsDefault().");
+                sendWhisper(who, "Unexpected privledge value of " + priv + ". The expected values are 'gm' or 'players'.");
         }
     }
     
@@ -1185,7 +1185,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<li><i>roomSideAdd</i></li>'
                         +'<li><i>roomSideRemove</i></li>'
                         +'<li><i>roomDoorImageSet</i></li>'
-                        +'<li><i>setDoorPrivsDefault</i></li>'
+                        +'<li><i>doorPrivsDefaultSet</i></li>'
                     +'</ul>'
                 );
                 break;
@@ -1228,7 +1228,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<b>Setting Commands</b>'
                         +'<ul>'
                             +'<li><i>roomDoorImageSet</i></li>'
-                            +'<li><i>setDoorPrivsDefault</i></li>'
+                            +'<li><i>doorPrivsDefaultSet</i></li>'
                             +'<li><i>adhocDoorMove</i></li>'
                         +'</ul>'
                         +'<b>Miscellaneous Commands</b>'
@@ -1268,7 +1268,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     '<b>Help Sub-topics</b>'
                     +'<ul>'
                         +'<li><i>roomDoorImageSet</i></li>'
-                        +'<li><i>setDoorPrivsDefault</i></li>'
+                        +'<li><i>doorPrivsDefaultSet</i></li>'
                         +'<li><i>adhocDoorMove</i></li>'
                     +'</ul>'
                 );
@@ -1355,8 +1355,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>'
                 );
                 break;
-            case "setDoorPrivsDefault":
-                displayHelp(who, 'Room API - <i>setDoorPrivsDefault '+ch('<')+'privs'+ch('>')+'</i>',
+            case "doorPrivsDefaultSet":
+                displayHelp(who, 'Room API - <i>doorPrivsDefaultSet '+ch('<')+'privs'+ch('>')+'</i>',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p><b><i>Sets the default for who should be able to control toggling doors.</i></b></p>'
                         +'<p><b>'+ch('<')+'privs'+ch('>')+'</b>: <b>gm</b> or <b>players</b>.</p>'
@@ -1512,11 +1512,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     case "adhocDoorRemove":
                         adhocDoorRemove(msg.selected, msg.who);
                         break;
-                    case "setDoorPrivsDefault":
+                    case "doorPrivsDefaultSet":
                         if(chatCommand.length != 3) {
-                            help(msg.who, "setDoorPrivsDefault");
+                            help(msg.who, "doorPrivsDefaultSet");
                         } else {
-                            setDoorPrivsDefault(chatCommand[2]);
+                            setDoorPrivsDefault(msg.who, chatCommand[2]);
                         }
                         break;
                     default:
