@@ -83,13 +83,15 @@ var APIRoomManagement = APIRoomManagement || (function() {
     //shrinks images (but sadly not paths) and moves everything over to the top left corner of the page where they can be manually deleted:
     function trashObject(obj) {
         if(obj != null) {
-            obj.set("rotation", 90);
-            obj.set("top", 10);
-            obj.set("left", 10);
-            obj.set("scale", 0.0000001);
-            obj.set("width", 1);
-            obj.set("height", 1);
-            obj.set("layer", "gmlayer");
+            setTimeout(function() {
+                obj.set("rotation", 90);
+                obj.set("top", 10);
+                obj.set("left", 10);
+                obj.set("scale", 0.0000001);
+                obj.set("width", 1);
+                obj.set("height", 1);
+                obj.set("layer", "gmlayer");
+            }, 5);
         }
     }
     
@@ -128,7 +130,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             topLeft : {
                 x : 0,
                 y : 0
-        	},
+            },
     		topMid : {
     			x : 0,
     			y : 0
