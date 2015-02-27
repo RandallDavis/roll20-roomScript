@@ -6,7 +6,7 @@ With this, you can import any image and declare it a "room". Rooms can be quickl
 Some of this was inspired by other scripts (credited in the script itself), but I streamlined things for this particular use case.
 
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=0YGJpxeqp7s" target="_blank"><img src="http://img.youtube.com/vi/0YGJpxeqp7s/0.jpg" 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=PtkuI6PP6fo" target="_blank"><img src="http://img.youtube.com/vi/PtkuI6PP6fo/0.jpg" 
 alt="Tutorial" width="100%" height="100%" border="10" /></a>
 
 
