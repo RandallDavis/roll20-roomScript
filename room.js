@@ -4,7 +4,7 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 0.4,
+    var version = 1.0,
         schemaVersion = 0.3;
         
     function checkInstall() {
@@ -131,7 +131,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 x : 0,
                 y : 0
             },
-    		topMid : {
+        	topMid : {
     			x : 0,
     			y : 0
     		},
