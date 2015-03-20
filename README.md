@@ -32,10 +32,6 @@ Doors are easy to toggle! Just move or rotate a door image, and it will go back 
 
 In order to set the door images that will be created, put an image that you like on the page, select it, and type __!api-room roomDoorImageSet \<type\>__. The valid types are *open* and *closed*. From that point on, doors will be created like those images.
 
-#Cleanup
-
-As the room gets redrawn, it will have old dynamic lighting lines that it doesn't need any more. Roll20's API doesn't allow these lines to be deleted automatically, so they have to be trashed by hand. When lines are no longer needed, they are moved to the upper left of the GM layer. All of these can be selected at once (by dragging over them) and then deleted.
-
 #Removing a side
 
 To remove a side, select the room and type __!api-room roomRemoveSide \<side\>__.
