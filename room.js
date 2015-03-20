@@ -4,7 +4,7 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 1.0,
+    var version = 1.1,
         schemaVersion = 0.3;
         
     function checkInstall() {
@@ -21,14 +21,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     }
     
-    //create object with hack to get around the bug where newly created objects can't be modified:
+    //create object:
     function fixedCreateObj()
     {
         var obj = createObj.apply(this, arguments);
-        if (obj && !obj.fbpath)
-        {
-            obj.fbpath = obj.changed._fbpath.replace(/([^\/]*\/){4}/, '/');
-        }
         return obj;
     }
     
@@ -80,7 +76,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return wall;
     }
     
-    //shrinks images (but sadly not paths) and moves everything over to the top left corner of the page where they can be manually deleted:
+    //Deletes objects. In case deletion failes, shrinks images (but sadly not paths) and moves everything over to the top left corner of the page where they can be manually deleted:
     function trashObject(obj) {
         if(obj != null) {
             setTimeout(function() {
@@ -91,6 +87,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 obj.set("width", 1);
                 obj.set("height", 1);
                 obj.set("layer", "gmlayer");
+                obj.remove();
             }, 5);
         }
     }
@@ -131,7 +128,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 x : 0,
                 y : 0
             },
-        	topMid : {
+    		topMid : {
     			x : 0,
     			y : 0
     		},
@@ -1412,7 +1409,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //handle user-input commands:
     function handleUserInput(msg) {
-        if(msg.type == "api" && msg.content.match(/^!api-room/)) {
+        if(msg.type == "api" && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
             var chatCommand = msg.content.split(' ');
             if(chatCommand.length == 1) {
                 help(msg.who, "commands");
