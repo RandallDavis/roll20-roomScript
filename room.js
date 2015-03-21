@@ -1100,7 +1100,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         sendChat("Room API", "/w " + to.split(" ")[0] + " " + message);  
     }
     
-    //character converter, credits to The Aaron from https://github.com/shdwjk/Roll20API/blob/master/APIHeartBeat/APIHeartBeat.js
+    //character converter, credits to Aaron from https://github.com/shdwjk/Roll20API/blob/master/APIHeartBeat/APIHeartBeat.js
     function ch(c) {
         var entities = {
             '<' : 'lt',
@@ -1152,6 +1152,22 @@ var APIRoomManagement = APIRoomManagement || (function() {
         sendWhisper(who, text);
     }
     
+    //constructs a clickable link to a help topic:
+    function helpLink(topic) {
+        return '[' + topic + '](!api-room help ' + topic + ') '
+    }
+    
+    //constructs clickable links to help topics:
+    function helpLinks(header, topics) {
+        var html = '<p><b>' + header + '</b><br/>'
+        
+        for(var i = 0;i<topics.length;i++) {
+            html += helpLink(topics[i]);
+        }
+        
+        return html + '</p>'
+    }
+    
     //general help:
     function help(who, topic) {
         switch(topic) {
@@ -1174,16 +1190,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>Door images are created by the API, but their image sources have to be set up <i>(see '+ch("'")+'help settings'+ch("'")+')</i>.</p>'
                 	+'</div>',
                      
-                    '<b>Help Sub-topics</b>'
-                    +'<ul>'
-                        +'<li><u>settings</u></li>'
-                        +'<li><i>roomAdd</i></li>'
-                        +'<li><i>roomRemove</i></li>'
-                        +'<li><i>roomSideAdd</i></li>'
-                        +'<li><i>roomSideRemove</i></li>'
-                        +'<li><i>roomDoorImageSet</i></li>'
-                        +'<li><i>doorPrivsDefaultSet</i></li>'
-                    +'</ul>'
+                    helpLinks('Sub-topics',['settings'])
+                    +helpLinks('Related Commands',['roomAdd','roomRemove','roomSideAdd','roomSideRemove','roomDoorImageSet','doorPrivsDefaultSet'])
                 );
                 break;
             case "adhoc":
@@ -1193,45 +1201,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>Adhoc walls and doors are individually placed objects that are not tied to a room.</p>'
                         +'<p>Adhoc walls and adhoc doors are used for complex situations where a wall shouldn'+ch("'")+'t simply attach to a room'+ch("'")+'s side, a single centered door isn'+ch("'")+'t enough, or alternate door images or door shapes are needed. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.</p>'
                     +'</div>',
-                     
-                    '<b>Help Sub-topics</b>'
-                    +'<ul>'
-                        +'<li><i>adhocWallAdd</i></li>'
-                        +'<li><i>adhocWallRemove</i></li>'
-                        +'<li><i>adhocDoorAdd</i></li>'
-                        +'<li><i>adhocDoorRemove</i></li>'
-                        +'<li><i>adhocDoorMove</i></li>'
-                    +'</ul>'
+                    
+                    helpLinks('Sub-topics',['adhocWallAdd','adhocWallRemove','adhocDoorAdd','adhocDoorRemove','adhocDoorMove'])
                 );
                 break;
             case "command":
             case "commands":
                 displayHelp(who, 'Room API - Commands',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<b>Room Commands</b>'
-                        +'<ul>'
-                            +'<li><i>roomAdd</i></li>'
-                            +'<li><i>roomRemove</i></li>'
-                            +'<li><i>roomSideAdd</i></li>'
-                            +'<li><i>roomSideRemove</i></li>'
-                        +'</ul>'
-                        +'<b>Adhoc Commands</b>'
-                        +'<ul>'
-                            +'<li><i>adhocWallAdd</i></li>'
-                            +'<li><i>adhocWallRemove</i></li>'
-                            +'<li><i>adhocDoorAdd</i></li>'
-                            +'<li><i>adhocDoorRemove</i></li>'
-                        +'</ul>'
-                        +'<b>Setting Commands</b>'
-                        +'<ul>'
-                            +'<li><i>roomDoorImageSet</i></li>'
-                            +'<li><i>doorPrivsDefaultSet</i></li>'
-                            +'<li><i>adhocDoorMove</i></li>'
-                        +'</ul>'
-                        +'<b>Miscellaneous Commands</b>'
-                        +'<ul>'
-                            +'<li><i>help</i></li>'
-                        +'</ul>'
+                        +helpLinks('Room Commands',['roomAdd','roomRemove','roomSideAdd','roomSideRemove'])
+                        +helpLinks('Adhoc Commands',['adhocWallAdd','adhocWallRemove','adhocDoorAdd','adhocDoorRemove'])
+                        +helpLinks('Setting Commands',['roomDoorImageSet','doorPrivsDefaultSet','adhocDoorMove'])
+                        +helpLinks('Miscellaneous Commands',['help'])
                     +'</div>'
                 );
                 break;
@@ -1244,7 +1225,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             +'<li><b>!api-room help '+ch('<')+'topic'+ch('>')+'</b> gives information on a topic.</li>'
                             +'<li><b>!api-room help '+ch('<')+'command'+ch('>')+'</b> should give you any details you need on specific commands.</li>'
                         +'</ul>'
-                    +'</div>'
+                    +'</div>',
+                    
+                    helpLinks('You can also click through help',['get started'])
                 );
                 break;
             case "clean":
@@ -1262,12 +1245,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>Certain settings are stored in the API to control its behavior.</p>'
                     +'</div>',
                      
-                    '<b>Help Sub-topics</b>'
-                    +'<ul>'
-                        +'<li><i>roomDoorImageSet</i></li>'
-                        +'<li><i>doorPrivsDefaultSet</i></li>'
-                        +'<li><i>adhocDoorMove</i></li>'
-                    +'</ul>'
+                    helpLinks('Setting Commands',['roomDoorImageSet','doorPrivsDefaultSet','adhocDoorMove'])
                 );
                 break;
             case "roomAdd":
@@ -1377,15 +1355,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 	    +'<p>Type <b>!api-room help '+ch('<')+'topic'+ch('>')+'</b> to learn more.</p>'
                     +'</div>',
                     
-                	'<b>Help Sub-topics</b>'
-                    +'<ul>'
-                        +'<li><u>rooms</u></li>'
-                        +'<li><u>adhoc</u></li>'
-                        +'<li><u>cleanup</u></li>'
-                        +'<li><u>settings</u></li>'
-                        +'<li><u>help</u></li>'
-                        +'<li><u>commands</u></li>'
-                    +'</ul>'
+                    helpLinks('Sub-topics',['rooms','adhoc','cleanup','settings','help','commands'])
                 );
         }
     }
