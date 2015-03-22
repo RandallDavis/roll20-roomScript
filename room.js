@@ -1492,7 +1492,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 } else if(gmNotes.match(/^\*adhocWall\*/)) {
                     intuitAdhocWall(msg);
                 } else {
-                    sendWhisper(msg.who, "The selected image is not recognized by the Room API.");
+                    sendWhisper(msg.who, "No actions are known for the selected image.");
                 }
             }
         } else if(msg.selected.length == 2) {
