@@ -1216,7 +1216,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case "door privledges":
                 displayHelp(who, 'Room API - Door Privledges',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p>This sets the default for who should be able to toggle doors. Setting it to '+ch("'")+'players'+ch("'")+' makes it that any body can toggle doors. Setting it to '+ch("'")+'GM'+ch("'")+' makes it that only GMs can toggle them.</p>'
+                        +'<p>This sets the default for who should be able to toggle doors. Setting it to '+ch("'")+'players'+ch("'")+' makes it that anybody can toggle doors. Setting it to '+ch("'")+'gm'+ch("'")+' makes it that only GMs can toggle them.</p>'
                         +'<p>This can be overridden on individual doors (such as a door that is locked) by double clicking the door and changing the '+ch("'")+'Controlled By'+ch("'")+' settings.</p>'
                         +commandLink('set it to gm','doorPrivsDefaultSet gm')
                         +commandLink('set it to players','doorPrivsDefaultSet players')
