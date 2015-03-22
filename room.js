@@ -1474,8 +1474,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(!msg.selected) {
             //nothing is selected, so nothing practical can be accomplished (except maybe settings, which is silly to intuit); assume that help documentation is the best course of action:
             help(msg.who, "");
-        } else if(msg.selected.length > 2) {
-            sendWhisper(msg.who, "Too many objects are selected.");
         } else if(msg.selected.length == 1) {
             var graphic = getObj("graphic", msg.selected[0]._id);
             if(!graphic) {
@@ -1515,8 +1513,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     intuitAdhocDoorAndEmpty(msg);
                 }
             }
+        } else {
+            sendWhisper(msg.who, "Too many objects are selected.");
         }
-        //TODO: 2 graphics selected together could be adding the second image to an adhoc door set
     }
     
     //handle any changes to objects:
