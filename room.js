@@ -1225,6 +1225,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             case "adhoc":
             case "adhocs":
+            case "adhoc walls and doors":
                 displayHelp(who, 'Room API - Adhoc',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Adhoc walls and doors are individually placed objects that are not tied to a room.</p>'
@@ -1264,7 +1265,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>The Room API is used with an intuitive interface. Just type <b>!api-room</b>, and action buttons will appear in the chat window. If nothing is selected, this help document will appear. Things get even easier if you set up a macro for the <b>!api-room</b> command.</p>'
                     +'</div>',
                     
-                    helpLinks('Sub-topics',['rooms','adhoc'])
+                    helpLinks('Sub-topics',['rooms','adhoc walls and doors'])
                 );
         }
     }
