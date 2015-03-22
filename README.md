@@ -9,5 +9,5 @@ Everything is done through one command that intuitively presents action buttons 
 
 Type __!api-room__ in the chat window to get started!
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=PtkuI6PP6fo" target="_blank"><img src="http://img.youtube.com/vi/PtkuI6PP6fo/0.jpg" 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=W8bH7etAeDw" target="_blank"><img src="http://img.youtube.com/vi/W8bH7etAeDw/0.jpg" 
 alt="Tutorial" width="100%" height="100%" border="10" /></a>
