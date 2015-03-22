@@ -1189,24 +1189,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
     //general help:
     function help(who, topic) {
         switch(topic) {
-            case "intuit":
-            case "intuitive":
-            case "interface":
-                displayHelp(who, 'Room API - Interface',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p>Room API can be completely handled via text commands.</p>'
-                        +'<p>For ease of use, it also comes along with an intuitive interface. In order to use the intuitive interface, just type <b>!api-room</b>, and action buttons will appear that handle the most likely things that you'+ch("'")+'d want to accomplish. Make sure that the image(s) that you want to interact with (if any) are selected. Things get even easier if you set up a macro for the <b>!api-room</b> command.</p>'
-                    +'</div>',
-                    
-                    helpLinks('Sub-topics',['commands'])
-                );
-                break;
             case "room":
             case "rooms":
                 displayHelp(who, 'Room API - Rooms',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Rooms are images that are managed by the API.</p>'
-                        +'<p>A room has four '+ch("'")+'sides'+ch("'")+': <b>t</b>(op), <b>b</b>(ottom), <b>l</b>(eft), and <b>r</b>(ight).</p>'
+                        +'<p>A room has four '+ch("'")+'sides'+ch("'")+': top, bottom, left, and right.</p>'
                         +'<p>Each side can be of the following types:'
                             +'<ul>'
                                 +'<li><b>wall</b> - which blocks LoS</li>'
@@ -1217,11 +1205,22 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'</p>'
                         +'<p>Rooms can be moved, rotated, and resized. The API will make sure that everything is drawn properly.</p>'
                         +'<p>Doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
-                        +'<p>Door images are created by the API, but their image sources have to be set up <i>(see '+ch("'")+'help settings'+ch("'")+')</i>.</p>'
-                	+'</div>',
+                        +'<p>To create a room, select an empty image and run <b>!api-room</b>.'
+                        +'<p>As soon as the image becomes a room, it is pushed to the Maps layer as a convenience and is from then on managed by the API. The room can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
+                        +'<p>Doors on rooms are drawn to whatever door images are set up. To set a door image, select an empty image with the image you want for your door and run <b>!api-room</b>. This needs to be set up for both open and closed doors.</p>'
+                   +'</div>',
                      
-                    helpLinks('Sub-topics',['settings'])
-                    +helpLinks('Related Commands',['roomAdd','roomRemove','roomSideAdd','roomSideRemove','roomDoorImageSet','doorPrivsDefaultSet'])
+                    helpLinks('Sub-topics',['door privledges'])
+                );
+                break;
+            case "door privledges":
+                displayHelp(who, 'Room API - Door Privledges',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>This sets the default for who should be able to toggle doors. Setting it to '+ch("'")+'players'+ch("'")+' makes it that any body can toggle doors. Setting it to '+ch("'")+'GM'+ch("'")+' makes it that only GMs can toggle them.</p>'
+                        +'<p>This can be overridden on individual doors (such as a door that is locked) by double clicking the door and changing the '+ch("'")+'Controlled By'+ch("'")+' settings.</p>'
+                        +commandLink('set it to gm','doorPrivsDefaultSet gm')
+                        +commandLink('set it to players','doorPrivsDefaultSet players')
+                    +'</div>'
                 );
                 break;
             case "adhoc":
@@ -1232,153 +1231,40 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>Adhoc walls and adhoc doors are used for complex situations where a wall shouldn'+ch("'")+'t simply attach to a room'+ch("'")+'s side, a single centered door isn'+ch("'")+'t enough, or alternate door images or door shapes are needed. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.</p>'
                     +'</div>',
                     
-                    helpLinks('Sub-topics',['adhocWallAdd','adhocWallRemove','adhocDoorAdd','adhocDoorRemove','adhocDoorMove'])
+                    helpLinks('Sub-topics',['adhoc walls','adhoc doors'])
                 );
                 break;
-            case "command":
-            case "commands":
-                displayHelp(who, 'Room API - Commands',
+            case "adhoc walls":
+                displayHelp(who, 'Room API - Adhoc Walls',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +helpLinks('Room Commands',['roomAdd','roomRemove','roomSideAdd','roomSideRemove'])
-                        +helpLinks('Adhoc Commands',['adhocWallAdd','adhocWallRemove','adhocDoorAdd','adhocDoorRemove'])
-                        +helpLinks('Setting Commands',['roomDoorImageSet','doorPrivsDefaultSet','adhocDoorMove'])
-                        +helpLinks('Miscellaneous Commands',['help'])
-                    +'</div>'
-                );
-                break;
-            case "help":
-                displayHelp(who, 'Room API - Help',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p>This help mechanism should tell you everything you need to know about the Room API.</p>'
-                        +'<ul>'
-                            +'<li><b>!api-room help</b> will give you a list of help topics.</li>'
-                            +'<li><b>!api-room help '+ch('<')+'topic'+ch('>')+'</b> gives information on a topic.</li>'
-                            +'<li><b>!api-room help '+ch('<')+'command'+ch('>')+'</b> should give you any details you need on specific commands.</li>'
-                        +'</ul>'
-                    +'</div>',
-                    
-                    helpLinks('You can also click through help',['get started'])
-                );
-                break;
-            case "settings":
-                displayHelp(who, 'Room API - Settings',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p>Certain settings are stored in the API to control its behavior.</p>'
-                    +'</div>',
-                     
-                    helpLinks('Setting Commands',['roomDoorImageSet','doorPrivsDefaultSet','adhocDoorMove'])
-                );
-                break;
-            case "roomAdd":
-                displayHelp(who, 'Room API - <i>roomAdd</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Turns an image into a room.</i></b></p>'
-                        +'<p>To add a room, select an image, and type this command. As soon as the image becomes a room, it is pushed to the Maps layer as a convenience and is from then on managed by the API. The room can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
-                    +'</div>'
-                );
-                break;
-            case "roomRemove":
-                displayHelp(who, 'Room API - <i>roomRemove</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Removes a room and any of its attached objects.</i></b></p>'
-                        +'<p>To remove a room, select it and type this command.</p>'
-                    +'</div>'
-                );
-                break;
-            case "roomSideAdd":
-                displayHelp(who, 'Room API - <i>roomSideAdd '+ch('<')+'side'+ch('>')+' '+ch('<')+'type'+ch('>')+'</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Adds a side to a room.</i></b></p>'
-                        +'<p><b>'+ch('<')+'side'+ch('>')+'</b>: <b>t</b>(op), <b>b</b>(ottom), <b>l</b>(eft), or <b>r</b>(ight).</p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>wall</b>, <b>empty</b>, <b>doorClosed</b>, or <b>doorOpen</b>.</p>'
-                        +'<p>To add a side to a room, select it and type this command.</p>'
-                    +'</div>'
-                );
-                break;
-            case "roomSideRemove":
-                displayHelp(who, 'Room API - <i>roomSideRemove '+ch('<')+'side'+ch('>')+'</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Removes a side from a room and any of the side'+ch("'")+'s attached objects.</i></b></p>'
-                        +'<p><b>'+ch('<')+'side'+ch('>')+'</b>: <b>t</b>(op), <b>b</b>(ottom), <b>l</b>(eft), or <b>r</b>(ight).</p>'
-                        +'<p>To remove a side from a room, select the room and type this command.</p>'
-                    +'</div>'
-                );
-                break;
-            case "adhocWallAdd":
-                displayHelp(who, 'Room API - <i>adhocWallAdd</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Turns an image into an adhoc wall.</i></b></p>'
-                        +'<p>To add an adhoc wall, select an image, and type this command. As soon as the image becomes an adhoc wall, it is pushed to the Maps layer as a convenience and is from then on managed by the API. It can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
+                        +'<p>To add an adhoc wall, select an empty image and run <b>!api-room</b>.</p>'
+                        +'<p>As soon as the image becomes an adhoc wall, it is pushed to the Maps layer as a convenience and is from then on managed by the API. It can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
                         +'<p>A LoS wall will be drawn through the length of the wall.</p>'
                     +'</div>'
                 );
                 break;
-            case "adhocWallRemove":
-                displayHelp(who, 'Room API - <i>adhocWallRemove</i>',
+            case "adhoc doors":
+                displayHelp(who, 'Room API - Adhoc Doors',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Removes an adhoc wall and any of its attached objects.</i></b></p>'
-                        +'<p>To remove an adhoc wall, select it and type this command.</p>'
-                    +'</div>'
-                );
-                break;
-            case "adhocDoorAdd":
-                displayHelp(who, 'Room API - <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'</i> and <i>adhocDoorAdd</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Creates an adhoc door in two stages.</i></b></p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>open</b> or <b>closed</b>.</p>'
-                        +'<p>Adhoc doors are created in two stages. To create the first adhoc door image, select it and type <i>adhocDoorAdd '+ch('<')+'type'+ch('>')+'.</i></p>'
-                        +'<p>To create the second adhoc door, just select the previous adhoc door image and the new image, and type <i>adhocDoorAdd</i>.</p>'
+                        +'<p>Adhoc doors are created in two steps. First, select an empty image and run <b>!api-room</b>. Second, select the first image along with another empty image and run <b>!api-room</b>.</p>'
                         +'<p>A LoS wall will be drawn through the door when it is closed.</p>'
                         +'<p>Adhoc doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
-                        +'<p>Adhoc doors can be moved, rotated, and resized. The API will make sure that everything is drawn properly.</p>'
-                    +'</div>'
-                );
-                break;
-            case "adhocDoorRemove":
-                displayHelp(who, 'Room API - <i>adhocDoorRemove</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Removes an adhoc door and any of its attached objects.</i></b></p>'
-                        +'<p>To remove an adhoc door, select it and type this command.</p>'
-                    +'</div>'
-                );
-                break;
-            case "roomDoorImageSet":
-                displayHelp(who, 'Room API - <i>roomDoorImageSet '+ch('<')+'type'+ch('>')+'</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Sets door images that will be created when door sides are added to rooms.</i></b></p>'
-                        +'<p><b>'+ch('<')+'type'+ch('>')+'</b>: <b>open</b> or <b>closed</b>.</p>'
-                        +'<p>In order to set the door images that will be created, put an image that you like on the page, select it, and type this command.</p>'
-                    +'</div>'
-                );
-                break;
-            case "doorPrivsDefaultSet":
-                displayHelp(who, 'Room API - <i>doorPrivsDefaultSet '+ch('<')+'privs'+ch('>')+'</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Sets the default for who should be able to control toggling doors.</i></b></p>'
-                        +'<p><b>'+ch('<')+'privs'+ch('>')+'</b>: <b>gm</b> or <b>players</b>.</p>'
-                        +commandLink('set it to gm now','doorPrivsDefaultSet gm')
-                        +commandLink('set it to players now','doorPrivsDefaultSet players')
-                    +'</div>'
-                );
-                break;
-            case "adhocDoorMove":
-                displayHelp(who, 'Room API - <i>adhocDoorMove '+ch('<')+'mode'+ch('>')+'</i> and <i>adhocDoorMove</i>',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p><b><i>Sets or toggles the adhocDoorMove setting.</i></b></p>'
-                        +'<p><b>'+ch('<')+'mode'+ch('>')+'</b>: <b>on</b> or <b>off</b>.</p>'
-                        +'<p>Running this command without an argument toggles the adhocDoorMove mode.</p>'
-                        +'<p>When the adhocDoorMove mode is <i>on</i>, interacting with adhoc doors does not toggle them. This is used to reposition, rotate, and resize adhoc doors.</p>'
-                    +'</div>'
+                        +'<p>When <b>'+ch("'")+'Move Mode'+ch("'")+'</b> is on, interacting with adhoc doors does not toggle them. This is used to reposition, rotate, and resize them.</p>'
+                        +commandLink('turn move mode on','adhocDoorMove on')
+                        +commandLink('turn move mode off','adhocDoorMove off')    
+                    +'</div>',
+                     
+                    helpLinks('Sub-topics',['door privledges'])
                 );
                 break;
             default:
                 displayHelp(who, 'Room API v'+version,
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                     	+'<p>This is an API for managing rooms, so that you can piece maps together out of various rooms without having to worry about dynamic lighting or doors - the goal of the API is that those things are handled for you in a natural and powerful way.</p>'
-                	    +'<p>Type <b>!api-room help '+ch('<')+'topic'+ch('>')+'</b> to learn more.</p>'
+                        +'<p>The Room API is used with an intuitive interface. Just type <b>!api-room</b>, and action buttons will appear in the chat window. If nothing is selected, this help document will appear. Things get even easier if you set up a macro for the <b>!api-room</b> command.</p>'
                     +'</div>',
                     
-                    helpLinks('Sub-topics',['interface','rooms','adhoc','settings','help','commands'])
+                    helpLinks('Sub-topics',['rooms','adhoc'])
                 );
         }
     }
@@ -1547,7 +1433,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         if(chatCommand.length <= 2) {
                             help(msg.who, "");
                         } else {
-                            help(msg.who, chatCommand[2]);
+                            var helpText = chatCommand;
+                            helpText.shift();
+                            helpText.shift();
+                            help(msg.who, helpText.join(" "));
                         }
                         break;
                     case "roomAdd":
