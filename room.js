@@ -4,7 +4,7 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 1.3,
+    var version = 2.0,
         schemaVersion = 0.3;
         
     function checkInstall() {
