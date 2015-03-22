@@ -1356,6 +1356,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p><b><i>Sets the default for who should be able to control toggling doors.</i></b></p>'
                         +'<p><b>'+ch('<')+'privs'+ch('>')+'</b>: <b>gm</b> or <b>players</b>.</p>'
+                        +commandLink('set it to gm now','doorPrivsDefaultSet gm')
+                        +commandLink('set it to players now','doorPrivsDefaultSet players')
                     +'</div>'
                 );
                 break;
