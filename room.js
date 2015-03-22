@@ -4,7 +4,7 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 1.2,
+    var version = 1.3,
         schemaVersion = 0.3;
         
     function checkInstall() {
@@ -636,16 +636,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
             var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
             var idsToKill = [];
             
-            for(var i = 0;i < sideMetas.length;i++) {
-                var sideMeta = sideMetas[i].substring(3).split('.');
-                for(var i2 = 0;i2 < sideMeta.length;i2++) {
-                    idsToKill.push(sideMeta[i2]);
+            if(sideMetas) {
+                for(var i = 0;i < sideMetas.length;i++) {
+                    var sideMeta = sideMetas[i].substring(3).split('.');
+                    for(var i2 = 0;i2 < sideMeta.length;i2++) {
+                        idsToKill.push(sideMeta[i2]);
+                    }
                 }
-            }
-            
-            for(var i = 0;i < idsToKill.length;i++) {
-                trashObject(getObj("path", idsToKill[i]));
-                trashObject(getObj("graphic", idsToKill[i]));
+                
+                for(var i = 0;i < idsToKill.length;i++) {
+                    trashObject(getObj("path", idsToKill[i]));
+                    trashObject(getObj("graphic", idsToKill[i]));
+                }
             }
             
             trashObject(room);
@@ -1154,23 +1156,51 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //constructs a clickable link to a help topic:
     function helpLink(topic) {
-        return '[' + topic + '](!api-room help ' + topic + ') '
+        return '[' + topic + '](!api-room help ' + topic + ') ';
     }
     
     //constructs clickable links to help topics:
     function helpLinks(header, topics) {
-        var html = '<p><b>' + header + '</b><br/>'
+        var html = '<p><b>' + header + '</b><br/>';
         
         for(var i = 0;i<topics.length;i++) {
             html += helpLink(topics[i]);
         }
         
-        return html + '</p>'
+        return html + '</p>';
+    }
+    
+    //constructs a clickable command:
+    function commandLink(text, command) {
+        return '[' + text + '](!api-room ' + command + ') ';
+    }
+    
+    //constructs clickable commands:
+    function commandLinks(header, commands) {
+        var html = '<p><b>' + header + '</b><br/>';
+        
+        for(var i = 0;i<commands.length;i++) {
+            html += commandLink(commands[i][0], commands[i][1]);
+        }
+        
+        return html + '</p>';
     }
     
     //general help:
     function help(who, topic) {
         switch(topic) {
+            case "intuit":
+            case "intuitive":
+            case "interface":
+                displayHelp(who, 'Room API - Interface',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Room API can be completely handled via text commands.</p>'
+                        +'<p>For ease of use, it also comes along with an intuitive interface. In order to use the intuitive interface, just type <b>!api-room</b>, and action buttons will appear that handle the most likely things that you'+ch("'")+'d want to accomplish. Make sure that the image(s) that you want to interact with (if any) are selected. Things get even easier if you set up a macro for the <b>!api-room</b> command.</p>'
+                    +'</div>',
+                    
+                    helpLinks('Sub-topics',['commands'])
+                );
+                break;
             case "room":
             case "rooms":
                 displayHelp(who, 'Room API - Rooms',
@@ -1228,15 +1258,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>',
                     
                     helpLinks('You can also click through help',['get started'])
-                );
-                break;
-            case "clean":
-            case "cleanup":
-                displayHelp(who, 'Room API - Cleanup',
-                    '<div style="padding-left:10px;margin-bottom:3px;">'
-                        +'<p>Room API discards objects that are no longer in use in the very top left corner of the gm layer. These discarded objects cannot be seen by players. Dynamic lighting walls are visible, but other objects (such as discarded doors or rooms) will be too small to see.</p>'
-                        +'<p>All objects are perfectly piled on top of each other so that you can select them all at once and delete them. It is recommended that this is done periodically.</p>'
-                    +'</div>'
                 );
                 break;
             case "settings":
@@ -1355,9 +1376,145 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 	    +'<p>Type <b>!api-room help '+ch('<')+'topic'+ch('>')+'</b> to learn more.</p>'
                     +'</div>',
                     
-                    helpLinks('Sub-topics',['rooms','adhoc','cleanup','settings','help','commands'])
+                    helpLinks('Sub-topics',['interface','rooms','adhoc','settings','help','commands'])
                 );
         }
+    }
+    
+    //intuitive command interface for handling an empty image:
+    function intuitEmptyImage(msg) {
+        displayHelp(msg.who, 'Empty Image Actions',
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Actions',[
+                        ['create room','roomAdd'],
+                        ['create adhoc wall','adhocWallAdd'],
+                        ['create adhoc closed door','adhocDoorAdd closed'],
+                        ['create adhoc open door','adhocDoorAdd open']
+                    ])
+                +commandLinks('Settings',[
+                        ['set open door default image','roomDoorImageSet open'],
+                        ['set closed door default image','roomDoorImageSet closed']
+                    ])
+            +'</div>'
+        );
+    }
+    
+    //helper function for intuitive commands for a room's side:
+    function intuitRoomSide(sideMetas, side) {
+        if(sideMetas) {
+            for(var i = 0;i < sideMetas.length;i++) {
+                if (sideMetas[i].substring(1, 2) == side) {
+                    return [['remove','roomSideRemove ' + side]];
+                }
+            }
+        }
+        
+        return [
+                ['add wall','roomSideAdd ' + side + ' wall'],
+                ['add open door','roomSideAdd ' + side + ' doorOpen'],
+                ['add closed door','roomSideAdd ' + side + ' doorClosed'],
+                ['add empty side','roomSideAdd ' + side + ' empty']
+            ];
+    }
+    
+    //intuitive command interface for handling a room:
+    function intuitRoom(msg, room) {
+        var sideMetas = room.get("gmnotes").match(/\*\S\*([^\*]+)/g);
+        
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Room',[['remove','roomRemove']])
+                +commandLinks('Left Side',intuitRoomSide(sideMetas, 'l'))
+                +commandLinks('Top Side',intuitRoomSide(sideMetas, 't'))
+                +commandLinks('Right Side',intuitRoomSide(sideMetas, 'r'))
+                +commandLinks('Bottom Side',intuitRoomSide(sideMetas, 'b'))
+            +'</div>';
+        
+        displayHelp(msg.who, 'Room Actions', body);
+    }
+    
+    //intuitive command interface for handling an adhoc door:
+    function intuitAdhocDoor(msg) {
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Adhoc Door',[['remove','adhocDoorRemove']])
+                +commandLinks('Move Mode (affects all adhoc doors)',[
+                        ['on','adhocDoorMove on'],
+                        ['off','adhocDoorMove off']
+                    ])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Adhoc Door Actions', body);
+    }
+    
+    //intuitive command interface for handling an adhoc wall:
+    function intuitAdhocWall(msg) {
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Adhoc Wall',[['remove','adhocWallRemove']])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Adhoc Wall Actions', body);
+    }
+    
+    //intuitive command interface for handling an adhoc door and an empty image:
+    function intuitAdhocDoorAndEmpty(msg) {
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Adhoc Door',[['complete set','adhocDoorAdd']])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Adhoc Door Actions', body);
+    }
+    
+    //intuitive command interface that presents wizard-like options based on context:
+    function intuit(msg) {
+        if(!msg.selected) {
+            //nothing is selected, so nothing practical can be accomplished (except maybe settings, which is silly to intuit); assume that help documentation is the best course of action:
+            help(msg.who, "");
+        } else if(msg.selected.length > 2) {
+            sendWhisper(msg.who, "Too many objects are selected.");
+        } else if(msg.selected.length == 1) {
+            var graphic = getObj("graphic", msg.selected[0]._id);
+            if(!graphic) {
+                //there is only intuitive functionality for graphics being selected:
+                help(msg.who, "");
+            } else {
+                var gmNotes = graphic.get("gmnotes");
+                if(!gmNotes) {
+                    intuitEmptyImage(msg);
+                } else if(gmNotes.match(/^\*room\*/)) {
+                    intuitRoom(msg, graphic);
+                } else if(gmNotes.match(/^\*adhocDoor\*/)) {
+                    intuitAdhocDoor(msg);
+                } else if(gmNotes.match(/^\*adhocWall\*/)) {
+                    intuitAdhocWall(msg);
+                } else {
+                    sendWhisper(msg.who, "The selected image is not recognized by the Room API.");
+                }
+            }
+        } else if(msg.selected.length == 2) {
+            var graphic1 = getObj("graphic", msg.selected[0]._id);
+            var graphic2 = getObj("graphic", msg.selected[1]._id);
+            
+            if(!graphic1 || !graphic2) {
+                sendWhisper(msg.who, "Only images should be selected.");
+            } else {
+                var gmNotes1 = graphic1.get("gmnotes");
+                var gmNotes2 = graphic2.get("gmnotes");
+                
+                if(gmNotes1 && gmNotes2) {
+                    sendWhisper(msg.who, "No actions are known for cases where neither selected image is empty.");
+                } else if(!(gmNotes1 || gmNotes2)) {
+                    sendWhisper(msg.who, "No actions are known for cases where two empty images are selected.");
+                } else if(!((gmNotes1 + gmNotes2).match(/^\*adhocDoor\*/))) {
+                    sendWhisper(msg.who, "No actions are known for cases where one selected image is empty and the other is not an adhoc door.");
+                } else {
+                    intuitAdhocDoorAndEmpty(msg);
+                }
+            }
+        }
+        //TODO: 2 graphics selected together could be adding the second image to an adhoc door set
     }
     
     //handle any changes to objects:
@@ -1382,7 +1539,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(msg.type == "api" && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
             var chatCommand = msg.content.split(' ');
             if(chatCommand.length == 1) {
-                help(msg.who, "commands");
+                intuit(msg);
             } else {
                 switch(chatCommand[1]) {
                     case "help":
