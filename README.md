@@ -1,6 +1,4 @@
 # roll20-roomScript
-Script using Roll20's API to automatically manage rooms, walls, and interactive doors.
-
 With this, you can import any image and declare it a "room". Rooms can be quickly customized to draw dynamic lighting around them, including doors that can be toggled. A closed door blocks line of sight - an open door lets line of sight through but not through the surrounding walls.
 
 Adhoc walls and doors can be used to piece together more complex rooms.
