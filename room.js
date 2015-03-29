@@ -38,7 +38,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
           return parts[1] + 'thumb' + parts[3];
         }
         return;
-    };
+    }
 
     //creates a dynamic lighting segment from A to B on the parent's page: 
     function createLosWall(parent, pointA, pointB) {
@@ -805,6 +805,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         newGmNotes = newGmNotes + drawRoomSide(room, roomXY, roomSideMeta.substring(1, 2), roomSideMetaInstructions, true);
  
         room.set("gmnotes", newGmNotes);
+        
+        //visual alert:
+        visualAlert(
+            door.get("gmnotes").match(/^\*doorOpen\*/) ? closedDoorPic : openDoorPic,
+            door.get('left'),
+            door.get('top'));
     }
     
     //sets the door image for capturing to that of the selected image:
