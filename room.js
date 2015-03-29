@@ -4,8 +4,10 @@
 
 var APIRoomManagement = APIRoomManagement || (function() {
     
-    var version = 2.0,
-        schemaVersion = 0.3;
+    var version = 2.1,
+        schemaVersion = 0.3,
+        closedDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
+        openDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124';
         
     function checkInstall() {
         if( ! _.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
@@ -923,6 +925,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         //draw the other door:
         drawAdhocDoor(otherDoor);
+        
+        //visual alert:
+        visualAlert(
+            meta[0] == "doorClosed" ? openDoorPic : closedDoorPic,
+            otherDoor.get('left'),
+            otherDoor.get('top'));
     }
     
     //turns an image into an adhoc wall:
@@ -1545,18 +1553,25 @@ var APIRoomManagement = APIRoomManagement || (function() {
     registerEventHandlers = function() {
         on('chat:message', handleUserInput);
         on('change:graphic', handleObjectChange);
-    };
+    }
     
     //expose public functions:
     return {
         checkInstall: checkInstall,
-        registerEventHandlers: registerEventHandlers
+        registerEventHandlers: registerEventHandlers,
     }
 
 })();
 
 //run the script:
 on('ready', function() {
-    APIRoomManagement.checkInstall();
-    APIRoomManagement.registerEventHandlers();
+    if(_.isFunction(visualAlert)) {
+        APIRoomManagement.checkInstall();
+        APIRoomManagement.registerEventHandlers();
+    } else {
+        log('--------------------------------------------------------------');
+        log('APIRoomManagement requires the VisualAlert script to work.');
+        log('VisualAlert GIST: https://github.com/RandallDavis/roll20-visualAlertScript');
+        log('--------------------------------------------------------------');
+    }
 });
