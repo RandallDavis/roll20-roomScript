@@ -7,7 +7,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     var version = 2.1,
         schemaVersion = 0.3,
         closedDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
-        openDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124';
+        openDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
+        padlockPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372';
         
     function checkInstall() {
         if( ! _.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
@@ -130,7 +131,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 x : 0,
                 y : 0
             },
-    		topMid : {
+        	topMid : {
     			x : 0,
     			y : 0
     		},
