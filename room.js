@@ -131,7 +131,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 x : 0,
                 y : 0
             },
-        	topMid : {
+            topMid : {
     			x : 0,
     			y : 0
     		},
@@ -811,7 +811,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         visualAlert(
             door.get("gmnotes").match(/^\*doorOpen\*/) ? closedDoorPic : openDoorPic,
             door.get('left'),
-            door.get('top'));
+            door.get('top'),
+            1.0,
+            0); //don't blink
     }
     
     //sets the door image for capturing to that of the selected image:
@@ -937,7 +939,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         visualAlert(
             meta[0] == "doorClosed" ? openDoorPic : closedDoorPic,
             otherDoor.get('left'),
-            otherDoor.get('top'));
+            otherDoor.get('top'),
+            1.0,
+            0); //no blinks
     }
     
     //turns an image into an adhoc wall:
