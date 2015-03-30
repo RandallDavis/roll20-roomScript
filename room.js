@@ -19,7 +19,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 doorOpenPicUrl: "",
                 doorClosedPicUrl: "",
                 adhocDoorMoveMode: 1,
-                doorPrivsDefault: 0, //0 = gm only, 1 = all players
+                doorPrivsDefault: 1, //0 = gm only, 1 = all players
             };
         }
     }
