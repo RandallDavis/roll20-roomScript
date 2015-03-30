@@ -1303,6 +1303,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         ['set open door default image','roomDoorImageSet open'],
                         ['set closed door default image','roomDoorImageSet closed']
                     ])
+                +commandLinks('Help',[['help','help']])
             +'</div>'
         );
     }
@@ -1336,6 +1337,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Top Side',intuitRoomSide(sideMetas, 't'))
                 +commandLinks('Right Side',intuitRoomSide(sideMetas, 'r'))
                 +commandLinks('Bottom Side',intuitRoomSide(sideMetas, 'b'))
+                +commandLinks('Help',[['help','help']])
             +'</div>';
         
         displayHelp(msg.who, 'Room Actions', body);
@@ -1350,6 +1352,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         ['on','adhocDoorMove on'],
                         ['off','adhocDoorMove off']
                     ])
+                +commandLinks('Help',[['help','help']])
             +'</div>';
         
         displayHelp(msg.who, 'Adhoc Door Actions', body);
@@ -1360,6 +1363,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Wall',[['remove','adhocWallRemove']])
+                +commandLinks('Help',[['help','help']])
             +'</div>';
         
         displayHelp(msg.who, 'Adhoc Wall Actions', body);
@@ -1370,6 +1374,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['complete set','adhocDoorAdd']])
+                +commandLinks('Help',[['help','help']])
             +'</div>';
         
         displayHelp(msg.who, 'Adhoc Door Actions', body);
