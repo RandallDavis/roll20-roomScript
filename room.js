@@ -921,7 +921,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
     //toggles and draws an adhoc door:
     function toggleAdhocDoor(adhocDoor) {
         var meta = (adhocDoor.get("gmnotes").match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
-        var positioning = (adhocDoor.get("gmnotes").match(/\*z\*([^\*]+)/g))[0].substring(3).split('.');
+        var positioning = (adhocDoor.get("gmnotes").match(/\*z\*([^\*]+)/g));
+        
+        //fudge positioning for backward compatibility:
+        if(!positioning) {
+            positioning = ("*z*" + adhocDoor.get("width") + "." + adhocDoor.get("height") + "." + adhocDoor.get("rotation") + "." + adhocDoor.get("left") + "." + adhocDoor.get("top") + "*%3Cbr%3E").match(/\*z\*([^\*]+)/g);
+        }
+        
+        positioning = positioning[0].substring(3).split('.');
         
         //verify that the door is part of a set:
         if(meta[1].length == 0) {
