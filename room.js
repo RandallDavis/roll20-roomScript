@@ -895,25 +895,31 @@ var APIRoomManagement = APIRoomManagement || (function() {
             trashObject(getObj("path", meta[2]));
         } catch(e) {}
         
+        //record the door's dimensions and rotation:
+        newGmNotes = newGmNotes + "*z*" + adhocDoor.get("width") + "." + adhocDoor.get("height") + "." + adhocDoor.get("rotation") + "." + adhocDoor.get("left") + "." + adhocDoor.get("top") + "*%3Cbr%3E";
+        
         //set the gmnotes:
         adhocDoor.set("gmnotes", newGmNotes);
         
-        //position the companion door if there is one:
+        //hide the companion door if there is one:
         var otherDoor = getObj("graphic", meta[1]);
         if(otherDoor) {
-            otherDoor.set("height", adhocDoor.get("height") / 10000);
-            otherDoor.set("width", adhocDoor.get("width") / 10000);
-            otherDoor.set("top", adhocDoor.get("top"));
-            otherDoor.set("left", adhocDoor.get("left"));
-            otherDoor.set("rotation", adhocDoor.get("rotation"));
+            otherDoor.set("height", 0);
+            otherDoor.set("width", 0);
+            otherDoor.set("top", 10);
+            otherDoor.set("left", 10);
+            otherDoor.set("rotation", 0);
             otherDoor.set("scale", adhocDoor.get("scale"));
-            otherDoor.set("layer", adhocDoor.get("layer"));
+            otherDoor.set("layer", "gmlayer");
+        } else {
+            log("No companion door found in drawAdhocDoor.");
         }
     }
     
     //toggles and draws an adhoc door:
     function toggleAdhocDoor(adhocDoor) {
         var meta = (adhocDoor.get("gmnotes").match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
+        var positioning = (adhocDoor.get("gmnotes").match(/\*z\*([^\*]+)/g))[0].substring(3).split('.');
         
         //verify that the door is part of a set:
         if(meta[1].length == 0) {
@@ -925,12 +931,22 @@ var APIRoomManagement = APIRoomManagement || (function() {
         //delete LoS wall if there is one:
         trashObject(getObj("path", meta[2]));
         
-        //show the companion door and hide this one:
+        //get the companion door:
         var otherDoor = getObj("graphic", meta[1]);
-        otherDoor.set("height", otherDoor.get("height") * 10000);
-        otherDoor.set("width", otherDoor.get("width") * 10000);
-        adhocDoor.set("height", otherDoor.get("height") / 10000);
-        adhocDoor.set("width", otherDoor.get("width") / 10000);
+        
+        //should have found the companion door, but didn't:
+        if(!otherDoor) {
+            log("No companion door found in toggleAdhocDoor.");
+            return;
+        }    
+    
+        //show the companion door:
+        otherDoor.set("width", parseInt(positioning[0]));
+        otherDoor.set("height", parseInt(positioning[1]));
+        otherDoor.set("rotation", parseInt(positioning[2]));
+        otherDoor.set("left", parseInt(positioning[3]));
+        otherDoor.set("top", parseInt(positioning[4]));
+        otherDoor.set("layer", adhocDoor.get("layer"));
         
         //draw the other door:
         drawAdhocDoor(otherDoor);
@@ -1050,7 +1066,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         var meta = (adhocDoor.get("gmnotes").match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
-        adhocDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + meta[0] + "." + newDoor.id + "." + meta[2] + "*%3Cbr%3E");
+        adhocDoor.set("gmnotes", 
+            "*adhocDoor*%3Cbr%3E*d*" + meta[0] + "." + newDoor.id + "." + meta[2] + "*%3Cbr%3E" 
+            + "*z*" + adhocDoor.get("width") + "." + adhocDoor.get("height") + "." + adhocDoor.get("rotation") + "." + adhocDoor.get("left") + "." + adhocDoor.get("top") + "*%3Cbr%3E"
+        );
         
         //determine new door type:
         var newDoorType;
@@ -1075,13 +1094,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         //set up and hide the new door:
         newDoor.set("gmnotes", "*adhocDoor*%3Cbr%3E*d*" + newDoorType + "." + adhocDoor.id + ".*%3Cbr%3E");
-        newDoor.set("height", adhocDoor.get("height") / 10000);
-        newDoor.set("width", adhocDoor.get("width") / 10000);
-        newDoor.set("top", adhocDoor.get("top"));
-        newDoor.set("left", adhocDoor.get("left"));
-        newDoor.set("rotation", adhocDoor.get("rotation"));
+        newDoor.set("height", 0);
+        newDoor.set("width", 0);
+        newDoor.set("top", 10);
+        newDoor.set("left", 10);
+        newDoor.set("rotation", 0);
         newDoor.set("scale", adhocDoor.get("scale"));
-        newDoor.set("layer", adhocDoor.get("layer"));
+        newDoor.set("layer", "gmlayer");
         newDoor.set("controlledby", adhocDoor.get("controlledby"));
     }
     
