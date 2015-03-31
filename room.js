@@ -808,12 +808,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
         room.set("gmnotes", newGmNotes);
         
         //visual alert:
-        visualAlert(
-            door.get("gmnotes").match(/^\*doorOpen\*/) ? closedDoorPic : openDoorPic,
-            door.get('left'),
-            door.get('top'),
-            1.0,
-            0); //don't blink
+        setTimeout(
+            visualAlert(
+                door.get("gmnotes").match(/^\*doorOpen\*/) ? closedDoorPic : openDoorPic,
+                door.get('left'),
+                door.get('top'),
+                1.0,
+                0), //don't blink
+            5);
     }
     
     //sets the door image for capturing to that of the selected image:
@@ -952,12 +954,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
         drawAdhocDoor(otherDoor);
         
         //visual alert:
-        visualAlert(
-            meta[0] == "doorClosed" ? openDoorPic : closedDoorPic,
-            otherDoor.get('left'),
-            otherDoor.get('top'),
-            1.0,
-            0); //no blinks
+        setTimeout(
+            visualAlert(
+                meta[0] == "doorClosed" ? openDoorPic : closedDoorPic,
+                otherDoor.get('left'),
+                otherDoor.get('top'),
+                1.0,
+                0), //no blinks
+            5);
     }
     
     //turns an image into an adhoc wall:
