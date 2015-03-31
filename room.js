@@ -1611,7 +1611,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
 
 //run the script:
 on('ready', function() {
-    if(_.isFunction(visualAlert)) {
+    if('undefined' !== typeof(APIVisualAlert) && APIVisualAlert.visualAlert && _.isFunction(visualAlert)) {
         APIRoomManagement.checkInstall();
         APIRoomManagement.registerEventHandlers();
     } else {
