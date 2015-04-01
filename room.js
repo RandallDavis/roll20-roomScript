@@ -831,9 +831,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(doorType) {
             case "doorClosed":
                 state.APIRoomManagement.doorClosedPicUrl = imgsrc;
+                sendWhisper(who, "Closed door image set.");
                 break;
             case "doorOpen": 
                 state.APIRoomManagement.doorOpenPicUrl = imgsrc;
+                sendWhisper(who, "Open door image set.");
                 break;
             default:
                 log("Unknown type " + doorType + " in setDoorUrl.");
@@ -1137,9 +1139,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(priv) {
             case "gm":
                 state.APIRoomManagement.doorPrivsDefault = 0;
+                sendWhisper(who, "Door privs set to 'gm'.");
                 break;
             case "players":
                 state.APIRoomManagement.doorPrivsDefault = 1;
+                sendWhisper(who, "Door privs set to 'players'.");
                 break;
             default:
                 sendWhisper(who, "Unexpected privledge value of " + priv + ". The expected values are 'gm' or 'players'.");
