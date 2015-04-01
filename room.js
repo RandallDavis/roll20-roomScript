@@ -11,6 +11,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         padlockPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372';
         
     function checkInstall() {
+        
+        log('-=> Room Management v'+version+' <=-');
+        
         if(!_.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
             log('APIRoomManagement: Resetting state. Door images will need to be set.');
             state.APIRoomManagement = {
