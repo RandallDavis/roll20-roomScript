@@ -11,7 +11,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         padlockPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372';
         
     function checkInstall() {
-        if( ! _.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
+        if(!_.has(state,'APIRoomManagement') || state.APIRoomManagement.version !== schemaVersion) {
             log('APIRoomManagement: Resetting state. Door images will need to be set.');
             state.APIRoomManagement = {
                 version: schemaVersion,
@@ -51,7 +51,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         //create a path for a segment from A to B relative to (left,top):
         if(isPositiveSlope) {
-            if(pointA.x >= pointB.x) {
+            if(pointA.x > pointB.x) {
                 path = "[[\"M\"," + (pointA.x - pointB.x) + "," + (pointA.y - pointB.y) + "],[\"L\",0,0]]";
             } else {
                 path = "[[\"M\",0,0],[\"L\"," + (pointB.x - pointA.x) + "," + (pointB.y - pointA.y) + "]]";
