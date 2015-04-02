@@ -82,38 +82,60 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return getPoints(this.token.get("width"), this.token.get("height"), this.token.get("rotation"), this.token.get("left"), this.token.get("top"));
     };
     
+    managedToken.prototype.shouldDrawWalls = function() {
+        return (this.token.get('layer') !== 'gmlayer');
+    };
+    
+    managedToken.prototype.deleteObjects = function(objectIds) {
+        objectIds.forEach(function(objectId) {
+            var obj = getObj(objectId[0], objectId[1]);
+            if(obj) {
+                setTimeout(function() {
+                    obj.remove();
+                }, 5);
+            }
+        });
+    };
+    
     inheritPrototype(adhocWall, managedToken);
     
+    adhocWall.prototype.load = function() {
+        var metaWall = this.token.get("gmnotes").match(/\*w\*([^\*]+)/g);
+        this.wallIds = new Array();
+        if(metaWall) {
+            this.wallIds.push(['path', metaWall[0].substring(3)]);
+        }
+    };
+    
+    adhocWall.prototype.save = function() {
+        var newGmNotes = 
+            "*adhocWall*%3Cbr%3E"
+            + "*w*" + this.wallIds[0][1] + "*%3Cbr%3E";
+        this.token.set('gmnotes', newGmNotes);
+    };
+    
     adhocWall.prototype.draw = function() {
-        var points = this.getPoints();
+        this.load();
+        var oldWallIds = this.wallIds;
         
-        
-        /*var wallXY = getPoints(adhocWall.get("width"), adhocWall.get("height"), adhocWall.get("rotation"), adhocWall.get("left"), adhocWall.get("top"));
-        var meta = adhocWall.get("gmnotes").match(/\*w\*([^\*]+)/g);
-        var newGmNotes = "*adhocWall*%3Cbr%3E";
-        
-        //draw LoS wall if the adhoc wall isn't on the gm layer:
-        if(adhocWall.get("layer") != 'gmlayer') {
+        if(this.shouldDrawWalls()) {
+            var points = this.getPoints();
             var wall;
             
             //draw a LoS wall through the longer dimension of the pic:
-            if(adhocWall.get("width") > adhocWall.get("height")) {
-                wall = createLosWall(adhocWall, wallXY.midLeft, wallXY.midRight);
+            if(this.token.get("width") > this.token.get("height")) {
+                wall = createLosWall(this.token, points.midLeft, points.midRight);
             } else {
-                wall = createLosWall(adhocWall, wallXY.topMid, wallXY.botMid);
+                wall = createLosWall(this.token, points.topMid, points.botMid);
             }
             
-            newGmNotes = newGmNotes + "*w*" + wall.id + "*%3Cbr%3E";
+            //TODO: figure out a better generic pattern for setters:
+            this.wallIds = new Array();
+            this.wallIds.push(['path', wall.id]);
         }
         
-        //delete old walls:
-        try {
-            for(var i = 0;i < meta.length;i++) {
-                trashObject(getObj("path", meta[i].substring(3)));
-            }
-        } catch(e) {}
-        
-        adhocWall.set("gmnotes", newGmNotes);*/
+        this.save();
+        this.deleteObjects(oldWallIds);
     };
     
     /* managed tokens - end */
