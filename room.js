@@ -73,7 +73,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     typedObject.prototype = {
         constructor: typedObject,
-        getType: function() { return this.type; }
+        getType: function() { return this.type; },
+        isType: function(type) {
+            var found = false;
+           
+            this.type.forEach(function(typeValue) {
+                if(type == typeValue) {
+                    found = true;
+                    return;
+                }
+            });
+           
+           return found;
+        }
     };
     
     inheritPrototype(managedToken, typedObject);
@@ -139,6 +151,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.deleteObjects(oldWallIds);
     };
     
+    adhocWall.prototype.destroy = function() {
+        this.load();
+        this.deleteObjects(this.wallIds);
+        this.token.remove();
+    };
+    
     /* managed tokens - end */
     
     
@@ -195,7 +213,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             if(!token && selectionType == 'empty') {
                 return true;
             } else {
-                //TODO: validate selectionType against token.getType()
+                return token.isType(selectionType);
             }
         }
         
@@ -217,6 +235,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         token.draw();
+    },
+    
+    destroyManagedToken = function(msg) {
+        var token = getManagedTokenById(msg.selected[0]._id);
+        token.destroy();
     },
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
@@ -479,7 +502,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         }
                         break;
                     case "adhocWallRemove":
-                        //adhocWallRemove(msg.selected, msg.who);
+                        if(validateSingleSelection(msg, 'adhocWall')) {
+                            destroyManagedToken(msg);
+                        }
                         break;
                     /*case "adhocDoorAdd":
                         if(chatCommand.length == 3) {
