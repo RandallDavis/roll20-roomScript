@@ -129,9 +129,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 wall = createLosWall(this.token, points.topMid, points.botMid);
             }
             
-            //TODO: figure out a better generic pattern for setters:
-            this.wallIds = new Array();
-            this.wallIds.push(['path', wall.id]);
+            var newWallIds = new Array();
+            newWallIds.push(['path', wall.id]);
+            
+            this.wallIds = newWallIds;
         }
         
         this.save();
