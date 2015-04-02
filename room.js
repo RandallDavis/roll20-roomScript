@@ -3,7 +3,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     /* core - begin */
     
     var version = 3.0,
-        schemaVersion = 1.0,
+        schemaVersion = 0.3,
         closedDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
@@ -154,7 +154,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     inheritPrototype(adhocWall, managedToken);
     
     adhocWall.prototype.load = function() {
-        var metaWall = this.token.get("gmnotes").match(/\*w\*([^\*]+)/g);
+        var metaWall = this.token.get('gmnotes').match(/\*w\*([^\*]+)/g);
         this.initializeCollectionProperty('wallIds');
         if(metaWall) {
             this.setProperty('wallIds', metaWall[0].substring(3));
@@ -163,8 +163,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     adhocWall.prototype.save = function() {
         var newGmNotes = 
-            "*adhocWall*%3Cbr%3E"
-            + "*w*" + this.getProperty('wallIds')[0][1] + "*%3Cbr%3E";
+            '*adhocWall*%3Cbr%3E'
+            + '*w*' + this.getProperty('wallIds')[0][1] + '*%3Cbr%3E';
         this.token.set('gmnotes', newGmNotes);
     };
     
@@ -177,7 +177,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             var wall;
             
             //draw a LoS wall through the longer dimension of the pic:
-            if(this.token.get("width") > this.token.get("height")) {
+            if(this.token.get('width') > this.token.get('height')) {
                 wall = createLosWall(this.token, points.midLeft, points.midRight);
             } else {
                 wall = createLosWall(this.token, points.topMid, points.botMid);
@@ -202,19 +202,93 @@ var APIRoomManagement = APIRoomManagement || (function() {
     door.prototype.setProperty = function(property, value) {
         switch(property) {
             case 'doorType':
-                this['-' + property] = value;
+            case 'companionDoor':
+                this['_' + property] = value;
+                break;
+            default:
+                managedObject.setProperty.call(this, property, value);
+                break;
+        }
+    };
+    
+    door.prototype.hide = function() {};
+    
+    inheritPrototype(adhocDoor, door);
+    
+    adhocDoor.prototype.setProperty = function(property, value) {
+        switch(property) {
+            case 'positionWidth':
+            case 'positionHeight':
+            case 'positionRotation':
+            case 'positionLeft':
+            case 'positionTop':
+                this['_' + property] = value;
                 break;
             default:
                 door.setProperty.call(this, property, value);
                 break;
         }
-    }
+    };
     
-    inheritPrototype(adhocDoor, door);
+    adhocDoor.prototype.load = function() {
+        var metaDoor = (adhocDoor.get('gmnotes').match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
+        this.initializeCollectionProperty('wallIds');
+        if(metaDoor) {
+            this.setProperty('doorType', metaDoor[0]);
+            this.setProperty('companionDoor', getManagedTokenById(metaDoor[1]));
+            this.setProperty('wallIds', metaDoor[2]);
+        }
+        
+        var metaPositioning = (adhocDoor.get("gmnotes").match(/\*z\*([^\*]+)/g));
+        if(!metaPositioning) {
+            this.setProperty('positionWidth', metaPositioning[0]);
+            this.setProperty('positionHeight', metaPositioning[1]);
+            this.setProperty('positionRotation', metaPositioning[2]);
+            this.setProperty('positionLeft', metaPositioning[3]);
+            this.setProperty('positionTop', metaPositioning[4]);
+        }
+    };
     
-    adhocDoor.prototype.load = function() {}
-    adhocDoor.prototype.save = function() {}
-    adhocDoor.prototype.draw = function() {}
+    adhocDoor.prototype.save = function() {
+        var newGmNotes = 
+            '*adhocDoor*%3Cbr%3E'
+            + '*d*' + this.getProperty('doorType') + '.' + this.getProperty('companionDoor') + '.' + this.getProperty('wallIds')[0][1] + "*%3Cbr%3E";
+            + '*z*' + this.token.get('width') + '.' + this.token.get('height') + '.' + this.token.get('rotation') + '.' + this.token.get('left') + '.' + this.token.get('top') + "*%3Cbr%3E";
+        this.token.set('gmnotes', newGmNotes);
+    };
+    
+    adhocDoor.prototype.shouldDrawWalls = function() {
+        return this.getProperty('doorType') == 'closedDoor' && door.shouldDrawWalls.call(this);
+    };
+    
+    adhocDoor.prototype.draw = function() {
+        this.load();
+        var oldWallIds = this.getProperty('wallIds');
+        
+        if(this.shouldDrawWalls()) {
+            var points = this.getPoints();
+            var wall;
+            
+            //draw a LoS wall through the longer dimension of the pic:
+            if(this.token.get('width') > this.token.get('height')) {
+                wall = createLosWall(this.token, points.midLeft, points.midRight);
+            } else {
+                wall = createLosWall(this.token, points.topMid, points.botMid);
+            }
+            
+            this.initializeCollectionProperty('wallIds');
+            this.setProperty('wallIds', wall.id);
+        }
+        
+        var companionDoor = this.getProperty('companionDoor');
+        
+        if(companionDoor) {
+            companionDoor.hide();
+        }
+        
+        this.save();
+        this.deleteObjects(oldWallIds);
+    };
     
     /* managed tokens - end */
     
@@ -247,7 +321,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case 'adhocWall':
                 return new adhocWall(token);
                 break;
-            //TODO: more types    
+            case 'adhocDoor':
+                return new adhocDoor(token);
+                break;
             default:
                 log('Unknown tokenType of ' + tokenType + ' in getManagedToken().');
                 break;
@@ -290,12 +366,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case 'adhocDoorOpen':
                 var emptyToken = getObj('graphic', msg.selected[0]._id);
                 token = new adhocDoor(emptyToken);
-                token.setProperty('doorType', 'open');
+                token.setProperty('doorType', 'doorOpen');
                 break;
             case 'adhocDoorClosed':
                 var emptyToken = getObj('graphic', msg.selected[0]._id);
                 token = new adhocDoor(emptyToken);
-                token.setProperty('doorType', 'closed');
+                token.setProperty('doorType', 'doorClosed');
                 break;
             default:
                 log('Unknown tokenType of ' + tokenType + ' in createManagedToken().');
@@ -357,7 +433,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 y : 0
             },
             topMid : {
-        		x : 0,
+            	x : 0,
     			y : 0
     		},
     		topRight : {
