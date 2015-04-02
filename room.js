@@ -155,9 +155,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return null;
     },
     
-    getManagedToken = function(tokenId) {
-        var token = getObj("graphic", tokenId);
-        
+    getManagedToken = function(token) {
         if(!token) {
             return null;
         }
@@ -182,6 +180,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         return null;
+    },
+    
+    getManagedTokenById = function(tokenId) {
+        var token = getObj("graphic", tokenId);
+        return getManagedToken(token);
     },
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
@@ -362,14 +365,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
     	points.botRight.y = midY + y;
     
     	return points;
-    };
+    },
+    
+    handleTokenChange = function(graphic) {
+        var token = getManagedToken(graphic);
+        
+        if(!token) {
+            return;
+        }
+        
+        token.draw();
+    },
     
     /* token operations - end */
     
     
     /* text command handling - begin */
     
-    var handleUserInput = function (msg) {
+    handleUserInput = function (msg) {
         if(msg.type == "api" && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
             var token = getManagedToken(msg.selected[0]._id);
             log(token);
@@ -385,7 +398,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     //register event handlers:
     registerEventHandlers = function() {
         on('chat:message', handleUserInput);
-        //on('change:graphic', handleObjectChange);
+        on('change:graphic', handleTokenChange);
     }
     
     //expose public functions:
