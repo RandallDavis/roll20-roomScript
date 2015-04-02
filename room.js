@@ -73,7 +73,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     typedObject.prototype = {
         constructor: typedObject,
-        getType: function() { return this.type; },
         isType: function(type) {
             var found = false;
            
@@ -85,6 +84,58 @@ var APIRoomManagement = APIRoomManagement || (function() {
             });
            
            return found;
+        },
+        getProperty: function(property) {
+            if(!property) {
+                throw new Error("No property specified in getProperty().");
+            }
+            
+            //poor man's private variable:
+            var privateProperty = '_' + property;
+            
+            if('undefined' === typeof(this[privateProperty])) {
+                throw new Error(property + " not found in getProperty().");
+            }
+            
+            return this[privateProperty];
+        },
+        setProperty: function(property, value) {
+            if(!property) {
+                throw new Error("No property specified in setProperty().");
+            }
+            
+            if(!value) {
+                throw new Error("No value specified in setProperty().");
+            }
+            
+            //poor man's private variable:
+            var privateProperty = '_' + property;
+            
+            switch(property) {
+                case 'wallIds':
+                        this[privateProperty].push(['path', value]);
+                    break;
+                default:
+                    throw new Error(property + " is unknown in setProperty().");
+                    break;
+            }
+        },
+        initializeCollectionProperty: function(property) {
+            if(!property) {
+                throw new Error("No property specified in initializeCollectionProperty().");
+            }
+            
+            //poor man's private variable:
+            var privateProperty = '_' + property;
+            
+            switch(property) {
+                case 'wallIds':
+                        this[privateProperty] = new Array();
+                    break;
+                default:
+                    throw new Error(property + " is unknown in initializeCollectionProperty().");
+                    break;
+            }
         }
     };
     
@@ -113,22 +164,22 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     adhocWall.prototype.load = function() {
         var metaWall = this.token.get("gmnotes").match(/\*w\*([^\*]+)/g);
-        this.wallIds = new Array();
+        this.initializeCollectionProperty('wallIds');
         if(metaWall) {
-            this.wallIds.push(['path', metaWall[0].substring(3)]);
+            this.setProperty('wallIds', metaWall[0].substring(3));
         }
     };
     
     adhocWall.prototype.save = function() {
         var newGmNotes = 
             "*adhocWall*%3Cbr%3E"
-            + "*w*" + this.wallIds[0][1] + "*%3Cbr%3E";
+            + "*w*" + this.getProperty('wallIds')[0][1] + "*%3Cbr%3E";
         this.token.set('gmnotes', newGmNotes);
     };
     
     adhocWall.prototype.draw = function() {
         this.load();
-        var oldWallIds = this.wallIds;
+        var oldWallIds = this.getProperty('wallIds');
         
         if(this.shouldDrawWalls()) {
             var points = this.getPoints();
@@ -141,10 +192,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 wall = createLosWall(this.token, points.topMid, points.botMid);
             }
             
-            var newWallIds = new Array();
-            newWallIds.push(['path', wall.id]);
-            
-            this.wallIds = newWallIds;
+            this.initializeCollectionProperty('wallIds');
+            this.setProperty('wallIds', wall.id);
         }
         
         this.save();
@@ -153,7 +202,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     adhocWall.prototype.destroy = function() {
         this.load();
-        this.deleteObjects(this.wallIds);
+        this.deleteObjects(this.getProperty('wallIds'));
         this.token.remove();
     };
     
@@ -441,7 +490,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         sendChat("Room API", "/w " + to.split(" ")[0] + " " + message);  
     },
     
-    handleUserInput = function (msg) {
+    handleUserInput = function(msg) {
         if(msg.type == "api" && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
             var chatCommand = msg.content.split(' ');
             if(chatCommand.length == 1) {
