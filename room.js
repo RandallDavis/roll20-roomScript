@@ -149,7 +149,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var tokenType = gmNotes.match(/^\*\w+\*/);
         
         if(tokenType) {
-            return tokenType[0].substring(1,tokenType[0].length-1);
+            return tokenType[0].substring(1, tokenType[0].length-1);
         }
         
         return null;
@@ -167,9 +167,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         switch(tokenType) {
-            case 'room':
-                return new room(token);
-                break;
             case 'adhocWall':
                 return new adhocWall(token);
                 break;
@@ -183,8 +180,43 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     getManagedTokenById = function(tokenId) {
-        var token = getObj("graphic", tokenId);
+        var token = getObj('graphic', tokenId);
         return getManagedToken(token);
+    },
+    
+    validateSingleSelection = function(msg, selectionType) {
+        if(!msg.selected || msg.selected.length < 1) {
+            sendWhisper(msg.who, "You need to have an image selected.");
+        } else if(msg.selected.length > 1) {
+            sendWhisper(msg.who, "You should only have one image selected.");
+        } else {
+            var token = getManagedTokenById(msg.selected[0]._id);
+            
+            if(!token && selectionType == 'empty') {
+                return true;
+            } else {
+                //TODO: validate selectionType against token.getType()
+            }
+        }
+        
+        return false;
+    },
+    
+    createManagedToken = function(msg, tokenType) {
+        var token;
+        
+        switch(tokenType) {
+            case 'adhocWall':
+                var emptyToken = getObj('graphic', msg.selected[0]._id);
+                token = new adhocWall(emptyToken);
+                break;
+            //TODO: more types    
+            default:
+                log('Unknown tokenType of ' + tokenType + ' in createManagedToken().');
+                break;
+        }
+        
+        token.draw();
     },
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
@@ -382,24 +414,147 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* text command handling - begin */
     
+    sendWhisper = function(to, message) {
+        sendChat("Room API", "/w " + to.split(" ")[0] + " " + message);  
+    },
+    
     handleUserInput = function (msg) {
         if(msg.type == "api" && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
-            var token = getManagedToken(msg.selected[0]._id);
-            log(token);
-            token.draw();
+            var chatCommand = msg.content.split(' ');
+            if(chatCommand.length == 1) {
+                //intuit(msg);
+            } else {
+                switch(chatCommand[1]) {
+                    /*case "help":
+                        if(chatCommand.length <= 2) {
+                            help(msg.who, "");
+                        } else {
+                            var helpText = chatCommand;
+                            helpText.shift();
+                            helpText.shift();
+                            help(msg.who, helpText.join(" "));
+                        }
+                        break;
+                    case "roomAdd":
+                        roomAdd(msg.selected, msg.who);
+                        break;
+                    case "roomRemove":
+                        roomRemove(msg.selected, msg.who);
+                        break;
+                    case "roomSideAdd":
+                        if(chatCommand.length != 4) {
+                            help(msg.who, "roomSideAdd");
+                        } else {
+                            chatCommand = msg.content.replace("!api-room roomSideAdd ", "");
+                            roomSideAdd(chatCommand, msg.selected, msg.who);
+                        }
+                        break;
+                    case "roomSideRemove":
+                        if(chatCommand.length != 3) {
+                            help(msg.who, "roomSideRemove");
+                        } else {
+                            chatCommand = msg.content.replace("!api-room roomSideRemove ", "");
+                            roomSideRemove(chatCommand, msg.selected, msg.who);
+                        }
+                        break;
+                    case "roomDoorImageSet":
+                        if(chatCommand.length != 3) {
+                            help(msg.who, "roomDoorImageSet");
+                        } else {
+                            switch(chatCommand[2]) {
+                                case "open":
+                                    setDoorUrl(msg.selected, msg.who, "doorOpen");
+                                    break;
+                                case "closed":
+                                    setDoorUrl(msg.selected, msg.who, "doorClosed");
+                                    break;
+                                default:
+                                    help(msg.who, "roomDoorImageSet");
+                            }
+                        }
+                        break;*/
+                    case "adhocWallAdd":
+                        if(validateSingleSelection(msg, 'empty')) {
+                            createManagedToken(msg, 'adhocWall');
+                        }
+                        break;
+                    case "adhocWallRemove":
+                        //adhocWallRemove(msg.selected, msg.who);
+                        break;
+                    /*case "adhocDoorAdd":
+                        if(chatCommand.length == 3) {
+                            //if there is a parameter, then this is the first door of an adhoc door set:
+                            switch(chatCommand[2]) {
+                                case "open":
+                                    addhocDoorAdd(msg.selected, msg.who, "doorOpen");
+                                    break;
+                                case "closed":
+                                    addhocDoorAdd(msg.selected, msg.who, "doorClosed");
+                                    break;
+                                default:
+                                    help(msg.who, "adhocDoorAdd");
+                            }
+                        } else if(chatCommand.length == 2) {
+                            //if there is no parameter, then this is appending a second door to an adhoc door set:
+                            addhocDoorPairAdd(msg.selected, msg.who);
+                        } else {
+                            help(msg.who, "adhocDoorAdd");
+                        }
+                        break;
+                    case "adhocDoorMove":
+                        if(chatCommand.length == 3) {
+                            //if there is a parameter, then this should explicitly specify a move mode:
+                            switch(chatCommand[2]) {
+                                case "on":
+                                    setAdhocDoorMoveMode("on");
+                                    break;
+                                case "off":
+                                    setAdhocDoorMoveMode("off");
+                                    break;
+                                default:
+                                    help(msg.who, "adhocDoorMove");
+                            }
+                        } else if(chatCommand.length == 2) {
+                            //implied toggling of move mode:
+                            setAdhocDoorMoveMode("toggle");
+                        } else {
+                            help(msg.who, "adhocDoorMove");
+                        }
+                        break;
+                    case "adhocDoorRemove":
+                        adhocDoorRemove(msg.selected, msg.who);
+                        break;
+                    case "doorPrivsDefaultSet":
+                        if(chatCommand.length != 3) {
+                            help(msg.who, "doorPrivsDefaultSet");
+                        } else {
+                            setDoorPrivsDefault(msg.who, chatCommand[2]);
+                        }
+                        break;
+                    case "toggleDoorLock":
+                        toggleDoorLock(msg.selected, msg.who);
+                        break;
+                    case "toggleDoorTrap":
+                        //TODO:
+                        sendWhisper(msg.who, "not implemented yet");
+                        break;*/
+                    default:
+                        help(msg.who, "");
+                        break;
+                }
+            }
         }
-    };
+    },
     
     /* text command handling - end */
     
     
     /* nuts and bolts - begin */
     
-    //register event handlers:
     registerEventHandlers = function() {
         on('chat:message', handleUserInput);
         on('change:graphic', handleTokenChange);
-    }
+    };
     
     //expose public functions:
     return {
