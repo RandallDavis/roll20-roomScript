@@ -244,7 +244,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
     createLosWall = function(parent, pointA, pointB) {
-        var isPositiveSlope = (((pointB.y - pointA.y) == 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) > 0));
+        var isPositiveSlope = (((pointB.y - pointA.y) === 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) > 0));
         var top = Math.min(pointA.y, pointB.y);
         var left = Math.min(pointA.x, pointB.x);
         var path;
@@ -257,7 +257,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 path = "[[\"M\",0,0],[\"L\"," + (pointB.x - pointA.x) + "," + (pointB.y - pointA.y) + "]]";
             }
         } else {
-            if(pointA.x >= pointB.x) {
+            if(pointA.x > pointB.x) {
                 path = "[[\"M\"," + (pointA.x - pointB.x) + ",0],[\"L\",0," + (pointB.y - pointA.y) + "]]";
             } else {
                 path = "[[\"M\",0," + (pointA.y - pointB.y) + "],[\"L\"," + (pointB.x - pointA.x) + ",0]]";
