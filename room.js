@@ -90,14 +90,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 throw new Error("No property specified in getProperty().");
             }
             
-            //poor man's private variable:
-            var privateProperty = '_' + property;
-            
-            if('undefined' === typeof(this[privateProperty])) {
+            if('undefined' === typeof(this['_' + property])) {
                 throw new Error(property + " not found in getProperty().");
             }
             
-            return this[privateProperty];
+            return this['_' + property];
         },
         setProperty: function(property, value) {
             if(!property) {
@@ -108,12 +105,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 throw new Error("No value specified in setProperty().");
             }
             
-            //poor man's private variable:
-            var privateProperty = '_' + property;
-            
             switch(property) {
                 case 'wallIds':
-                        this[privateProperty].push(['path', value]);
+                        this['_' + property].push(['path', value]);
                     break;
                 default:
                     throw new Error(property + " is unknown in setProperty().");
@@ -125,12 +119,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 throw new Error("No property specified in initializeCollectionProperty().");
             }
             
-            //poor man's private variable:
-            var privateProperty = '_' + property;
-            
             switch(property) {
                 case 'wallIds':
-                        this[privateProperty] = new Array();
+                        this['_' + property] = new Array();
                     break;
                 default:
                     throw new Error(property + " is unknown in initializeCollectionProperty().");
@@ -206,6 +197,25 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.token.remove();
     };
     
+    inheritPrototype(door, managedToken);
+    
+    door.prototype.setProperty = function(property, value) {
+        switch(property) {
+            case 'doorType':
+                this['-' + property] = value;
+                break;
+            default:
+                door.setProperty.call(this, property, value);
+                break;
+        }
+    }
+    
+    inheritPrototype(adhocDoor, door);
+    
+    adhocDoor.prototype.load = function() {}
+    adhocDoor.prototype.save = function() {}
+    adhocDoor.prototype.draw = function() {}
+    
     /* managed tokens - end */
     
     
@@ -277,7 +287,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 var emptyToken = getObj('graphic', msg.selected[0]._id);
                 token = new adhocWall(emptyToken);
                 break;
-            //TODO: more types    
+            case 'adhocDoorOpen':
+                var emptyToken = getObj('graphic', msg.selected[0]._id);
+                token = new adhocDoor(emptyToken);
+                token.setProperty('doorType', 'open');
+                break;
+            case 'adhocDoorClosed':
+                var emptyToken = getObj('graphic', msg.selected[0]._id);
+                token = new adhocDoor(emptyToken);
+                token.setProperty('doorType', 'closed');
+                break;
             default:
                 log('Unknown tokenType of ' + tokenType + ' in createManagedToken().');
                 break;
@@ -555,18 +574,22 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             destroyManagedToken(msg);
                         }
                         break;
-                    /*case "adhocDoorAdd":
+                    case "adhocDoorAdd":
                         if(chatCommand.length == 3) {
                             //if there is a parameter, then this is the first door of an adhoc door set:
-                            switch(chatCommand[2]) {
-                                case "open":
-                                    addhocDoorAdd(msg.selected, msg.who, "doorOpen");
-                                    break;
-                                case "closed":
-                                    addhocDoorAdd(msg.selected, msg.who, "doorClosed");
-                                    break;
-                                default:
-                                    help(msg.who, "adhocDoorAdd");
+                            if(validateSingleSelection(msg, 'empty')) {
+                                switch(chatCommand[2]) {
+                                    case "open":
+                                        //addhocDoorAdd(msg.selected, msg.who, "doorOpen");
+                                        createManagedToken(msg, 'adhocDoorOpen');
+                                        break;
+                                    case "closed":
+                                        //addhocDoorAdd(msg.selected, msg.who, "doorClosed");
+                                        createManagedToken(msg, 'adhocDoorClosed');
+                                        break;
+                                    default:
+                                        help(msg.who, "adhocDoorAdd");
+                                }
                             }
                         } else if(chatCommand.length == 2) {
                             //if there is no parameter, then this is appending a second door to an adhoc door set:
@@ -575,7 +598,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             help(msg.who, "adhocDoorAdd");
                         }
                         break;
-                    case "adhocDoorMove":
+                    /*case "adhocDoorMove":
                         if(chatCommand.length == 3) {
                             //if there is a parameter, then this should explicitly specify a move mode:
                             switch(chatCommand[2]) {
