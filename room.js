@@ -21,7 +21,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 wallColor: "#00FF00",
                 doorOpenPicUrl: "",
                 doorClosedPicUrl: "",
-                adhocDoorMoveMode: 1,
+                adhocDoorMoveMode: 0,
                 doorPrivsDefault: 1 //0 = gm only, 1 = all players
             };
         }
@@ -293,11 +293,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         var metaPositioning = (this.token.get("gmnotes").match(/\*z\*([^\*]+)/g));
         if(metaPositioning) {
+            metaPositioning = metaPositioning[0].substring(3).split('.');
             this.setProperty('positionWidth', metaPositioning[0]);
             this.setProperty('positionHeight', metaPositioning[1]);
             this.setProperty('positionRotation', metaPositioning[2]);
             this.setProperty('positionLeft', metaPositioning[3]);
             this.setProperty('positionTop', metaPositioning[4]);
+        } else {
+            //fudge positioning for backward compatibility:
+            this.setProperty('positionWidth', this.token.get('width'));
+            this.setProperty('positionHeight', this.token.get('height'));
+            this.setProperty('positionRotation', this.token.get('rotation'));
+            this.setProperty('positionLeft', this.token.get('left'));
+            this.setProperty('positionTop', this.token.get('top'));
         }
     };
     
@@ -362,6 +370,33 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         this.save();
         this.deleteObjects(oldWallIds);
+    };
+    
+    adhocDoor.prototype.attemptToggle = function() {
+        if(state.APIRoomManagement.adhocDoorMoveMode == 1) {
+            this.draw();
+        } else {
+            this.load();
+            
+            var companionDoor = this.getProperty('companionDoor');
+            
+            if(!companionDoor) {
+                log('Attempt to toggle adhoc door that has no companion door. Aborting toggle.');
+                this.draw();
+            } else {
+                companionDoor.load();
+                
+                companionDoor.token.set("width", parseInt(this.getProperty('positionWidth')));
+                companionDoor.token.set("height", parseInt(this.getProperty('positionHeight')));
+                companionDoor.token.set("rotation", parseInt(this.getProperty('positionRotation')));
+                companionDoor.token.set("left", parseInt(this.getProperty('positionLeft')));
+                companionDoor.token.set("top", parseInt(this.getProperty('positionTop')));
+                companionDoor.token.set("layer", this.token.get('layer'));
+                
+                companionDoor.save();
+                companionDoor.draw();
+            }
+        }
     };
     
     /* managed tokens - end */
@@ -705,7 +740,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
             return;
         }
         
-        token.draw();
+        if(token.isType('door')) {
+            token.attemptToggle();
+        } else {
+            token.draw();
+        }
     },
     
     /* token operations - end */
