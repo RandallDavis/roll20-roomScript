@@ -4,6 +4,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     var version = 3.0,
         schemaVersion = 0.3,
+        
+        //TODO: rename these to 'alert pics':
         closedDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
@@ -237,7 +239,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     door.prototype.hide = function() {
-        //TODO
+        this.load();
+        
+        var oldWallIds = this.getProperty('wallIds');
+        this.deleteObjects(oldWallIds);
+        this.initializeCollectionProperty('wallIds');
+        
+        this.token.set("height", 0);
+        this.token.set("width", 0);
+        this.token.set("top", 10);
+        this.token.set("left", 10);
+        this.token.set("layer", "gmlayer");
+        
+        this.save();
     };
     
     inheritPrototype(adhocDoor, door);
@@ -485,6 +499,15 @@ var APIRoomManagement = APIRoomManagement || (function() {
             default:
                 log('Unknown tokenType of ' + tokenType + ' in createManagedToken().');
                 break;
+        }
+        
+        if(token.isType('door')) {
+            if(state.APIRoomManagement.doorPrivsDefault === 0) {
+                adhocDoor.set("layer", "map");
+            } else {
+                adhocDoor.set("controlledby", "all");
+                adhocDoor.set("layer", "objects");
+            }
         }
         
         token.draw();
