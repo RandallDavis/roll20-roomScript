@@ -273,8 +273,20 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     adhocDoor.prototype.destroy = function() {
         this.load();
-        if(this.getProperty('companionDoor')) {
-            this.getProperty('companionDoor').destroy();
+        
+        var companionDoor = this.getProperty('companionDoor');
+        
+        if(companionDoor) {
+            companionDoor.load();
+            
+            //unlink doors:
+            this.setProperty('companionDoor', null);
+            companionDoor.setProperty('companionDoor', null);
+            
+            this.save();
+            companionDoor.save();
+            
+            companionDoor.destroy();
         }
         
         door.prototype.destroy.call(this);
@@ -538,10 +550,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         if(token.isType('door')) {
             if(state.APIRoomManagement.doorPrivsDefault === 0) {
-                adhocDoor.set("layer", "map");
+                token.token.set("layer", "map");
             } else {
-                adhocDoor.set("controlledby", "all");
-                adhocDoor.set("layer", "objects");
+                token.token.set("controlledby", "all");
+                token.token.set("layer", "objects");
             }
         }
         
@@ -865,11 +877,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         } else {
                             help(msg.who, "adhocDoorMove");
                         }
-                        break;
+                        break;*/
                     case "adhocDoorRemove":
-                        adhocDoorRemove(msg.selected, msg.who);
+                        if(validateSelections(msg, ['adhocDoor'])) {
+                            destroyManagedToken(msg);
+                        }
                         break;
-                    case "doorPrivsDefaultSet":
+                    /*case "doorPrivsDefaultSet":
                         if(chatCommand.length != 3) {
                             help(msg.who, "doorPrivsDefaultSet");
                         } else {
