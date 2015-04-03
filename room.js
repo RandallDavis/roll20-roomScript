@@ -299,7 +299,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(companionDoor) {
             companionDoorId = companionDoor.token.id;
         }
-        
+    
         var newGmNotes = 
             '*adhocDoor*%3Cbr%3E'
             + '*d*' 
@@ -451,7 +451,36 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 token.setProperty('doorType', 'doorClosed');
                 break;
             case 'adhocDoorCompanion':
-                //TODO
+                //sort out which image is which:
+                var newDoor, oldDoor;
+                msg.selected.forEach(function(selection) {
+                    var token = getManagedTokenById(selection._id);
+                    
+                    if(!token) {
+                        newDoor = getObj('graphic', selection._id);
+                    } else {
+                        oldDoor = token;
+                    }
+                });
+                
+                oldDoor.load();
+                
+                newDoor = new adhocDoor(newDoor);
+                var newDoorType = (oldDoor.getProperty('doorType') == 'doorClosed' ? 'doorOpen' : 'doorClosed');
+                newDoor.setProperty('doorType', newDoorType);
+                
+                oldDoor.setProperty('companionDoor', newDoor);
+                newDoor.setProperty('companionDoor', oldDoor);
+                
+                //save token so that companionDoor properties aren't lost on drawing:
+                newDoor.save();
+                
+                //save token so that companionDoor properties aren't lost on drawing:
+                oldDoor.setProperty('companionDoor', newDoor);
+                oldDoor.save();
+                
+                token = oldDoor;
+                
                 break;
             default:
                 log('Unknown tokenType of ' + tokenType + ' in createManagedToken().');
@@ -513,7 +542,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 y : 0
             },
             topMid : {
-            	x : 0,
+                x : 0,
     			y : 0
     		},
     		topRight : {
