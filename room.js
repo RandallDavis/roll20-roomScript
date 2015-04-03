@@ -91,7 +91,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             }
             
             if('undefined' === typeof(this['_' + property])) {
-                throw new Error(property + " not found in getProperty().");
+                //throw new Error(property + " not found in getProperty().");
+                return null;
             }
             
             return this['_' + property];
@@ -162,9 +163,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     adhocWall.prototype.save = function() {
+        var wallIds = this.getProperty('wallIds');
+        var wallId;
+        
+        if(wallIds && wallIds.length > 0) {
+            wallId = wallIds[0][1];
+        }
+        
         var newGmNotes = 
             '*adhocWall*%3Cbr%3E'
-            + '*w*' + this.getProperty('wallIds')[0][1] + '*%3Cbr%3E';
+            + '*w*'
+                + saveBlank(wallId)
+                + '*%3Cbr%3E';
         this.token.set('gmnotes', newGmNotes);
     };
     
@@ -206,7 +216,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 this['_' + property] = value;
                 break;
             default:
-                managedObject.setProperty.call(this, property, value);
+                managedToken.prototype.setProperty.call(this, property, value);
                 break;
         }
     };
@@ -225,22 +235,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 this['_' + property] = value;
                 break;
             default:
-                door.setProperty.call(this, property, value);
+                door.prototype.setProperty.call(this, property, value);
                 break;
         }
     };
     
     adhocDoor.prototype.load = function() {
-        var metaDoor = (adhocDoor.get('gmnotes').match(/\*d\*([^\*]+)/g))[0].substring(3).split('.');
+        var metaDoor = (this.token.get('gmnotes').match(/\*d\*([^\*]+)/g))
         this.initializeCollectionProperty('wallIds');
         if(metaDoor) {
+            metaDoor = metaDoor[0].substring(3).split('.');
             this.setProperty('doorType', metaDoor[0]);
-            this.setProperty('companionDoor', getManagedTokenById(metaDoor[1]));
+            var companionDoor = getManagedTokenById(metaDoor[1]);
+            this.setProperty('companionDoor', companionDoor);
             this.setProperty('wallIds', metaDoor[2]);
         }
         
-        var metaPositioning = (adhocDoor.get("gmnotes").match(/\*z\*([^\*]+)/g));
-        if(!metaPositioning) {
+        var metaPositioning = (this.token.get("gmnotes").match(/\*z\*([^\*]+)/g));
+        if(metaPositioning) {
             this.setProperty('positionWidth', metaPositioning[0]);
             this.setProperty('positionHeight', metaPositioning[1]);
             this.setProperty('positionRotation', metaPositioning[2]);
@@ -250,15 +262,37 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     adhocDoor.prototype.save = function() {
+        var wallIds = this.getProperty('wallIds');
+        var wallId;
+        if(wallIds && wallIds.length > 0) {
+            wallId = wallIds[0][1];
+        }
+        
+        var companionDoor = this.getProperty('companionDoor');
+        var companionDoorId;
+        if(companionDoor) {
+            companionDoorId = companionDoor.token.id;
+        }
+        
         var newGmNotes = 
             '*adhocDoor*%3Cbr%3E'
-            + '*d*' + this.getProperty('doorType') + '.' + this.getProperty('companionDoor') + '.' + this.getProperty('wallIds')[0][1] + "*%3Cbr%3E";
-            + '*z*' + this.token.get('width') + '.' + this.token.get('height') + '.' + this.token.get('rotation') + '.' + this.token.get('left') + '.' + this.token.get('top') + "*%3Cbr%3E";
+            + '*d*' 
+                + saveBlank(this.getProperty('doorType')) + '.' 
+                + saveBlank(companionDoorId) + '.' 
+                + saveBlank(wallId)
+                + "*%3Cbr%3E"
+            + '*z*' 
+                + this.token.get('width') + '.' 
+                + this.token.get('height') + '.' 
+                + this.token.get('rotation') + '.' 
+                + this.token.get('left') + '.' 
+                + this.token.get('top') 
+                + "*%3Cbr%3E";
         this.token.set('gmnotes', newGmNotes);
     };
     
     adhocDoor.prototype.shouldDrawWalls = function() {
-        return this.getProperty('doorType') == 'closedDoor' && door.shouldDrawWalls.call(this);
+        return this.getProperty('doorType') == 'doorClosed' && door.prototype.shouldDrawWalls.call(this);
     };
     
     adhocDoor.prototype.draw = function() {
@@ -335,6 +369,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
     getManagedTokenById = function(tokenId) {
         var token = getObj('graphic', tokenId);
         return getManagedToken(token);
+    },
+    
+    saveBlank = function(value) {
+        return ('undefined' === value || !value) ? '' : value;
     },
     
     validateSingleSelection = function(msg, selectionType) {
