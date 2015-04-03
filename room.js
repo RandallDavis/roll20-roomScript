@@ -91,7 +91,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
             }
             
             if('undefined' === typeof(this['_' + property])) {
-                //throw new Error(property + " not found in getProperty().");
                 return null;
             }
             
@@ -107,9 +106,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
             }
             
             switch(property) {
-                case 'wallIds':
-                        this['_' + property].push(['path', value]);
-                    break;
                 default:
                     throw new Error(property + " is unknown in setProperty().");
                     break;
@@ -121,9 +117,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
             }
             
             switch(property) {
-                case 'wallIds':
-                        this['_' + property] = new Array();
-                    break;
                 default:
                     throw new Error(property + " is unknown in initializeCollectionProperty().");
                     break;
@@ -132,6 +125,28 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     inheritPrototype(managedToken, typedObject);
+    
+    managedToken.prototype.setProperty = function(property, value) {
+        switch(property) {
+            case 'wallIds':
+                this['_' + property].push(['path', value]);
+                break;
+            default:
+                typedObject.prototype.setProperty.call(this, property, value);
+                break;
+        }
+    };
+    
+    managedToken.prototype.initializeCollectionProperty = function(property) {
+        switch(property) {
+            case 'wallIds':
+                    this['_' + property] = new Array();
+                break;
+            default:
+                typedObject.prototype.initializeCollectionProperty.call(this, property);
+                break;
+        }
+    };
     
     managedToken.prototype.getPoints = function() {
         return getPoints(this.token.get("width"), this.token.get("height"), this.token.get("rotation"), this.token.get("left"), this.token.get("top"));
@@ -150,6 +165,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 }, 5);
             }
         });
+    };
+    
+    managedToken.prototype.destroy = function() {
+        this.load();
+        this.deleteObjects(this.getProperty('wallIds'));
+        this.token.remove();
     };
     
     inheritPrototype(adhocWall, managedToken);
@@ -201,12 +222,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.deleteObjects(oldWallIds);
     };
     
-    adhocWall.prototype.destroy = function() {
-        this.load();
-        this.deleteObjects(this.getProperty('wallIds'));
-        this.token.remove();
-    };
-    
     inheritPrototype(door, managedToken);
     
     door.prototype.setProperty = function(property, value) {
@@ -221,7 +236,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     };
     
-    door.prototype.hide = function() {};
+    door.prototype.hide = function() {
+        //TODO
+    };
     
     inheritPrototype(adhocDoor, door);
     
@@ -240,8 +257,17 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     };
     
+    adhocDoor.prototype.destroy = function() {
+        this.load();
+        if(this.getProperty('companionDoor')) {
+            this.getProperty('companionDoor').destroy();
+        }
+        
+        door.prototype.destroy.call(this);
+    };
+    
     adhocDoor.prototype.load = function() {
-        var metaDoor = (this.token.get('gmnotes').match(/\*d\*([^\*]+)/g))
+        var metaDoor = (this.token.get('gmnotes').match(/\*d\*([^\*]+)/g));
         this.initializeCollectionProperty('wallIds');
         if(metaDoor) {
             metaDoor = metaDoor[0].substring(3).split('.');
@@ -411,6 +437,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 token = new adhocDoor(emptyToken);
                 token.setProperty('doorType', 'doorClosed');
                 break;
+            case 'adhocDoorCompanion':
+                //TODO
+                break;
             default:
                 log('Unknown tokenType of ' + tokenType + ' in createManagedToken().');
                 break;
@@ -445,8 +474,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 path = "[[\"M\",0," + Math.abs(pointA.y - pointB.y) + "],[\"L\"," + Math.abs(pointB.x - pointA.x) + ",0]]";
             }
         }
-        
-        log(path);
         
         //create a segment path on the walls layer to block LoS:
         var wall = createObj("path", {
@@ -696,20 +723,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             if(validateSingleSelection(msg, 'empty')) {
                                 switch(chatCommand[2]) {
                                     case "open":
-                                        //addhocDoorAdd(msg.selected, msg.who, "doorOpen");
                                         createManagedToken(msg, 'adhocDoorOpen');
                                         break;
                                     case "closed":
-                                        //addhocDoorAdd(msg.selected, msg.who, "doorClosed");
                                         createManagedToken(msg, 'adhocDoorClosed');
                                         break;
                                     default:
                                         help(msg.who, "adhocDoorAdd");
+                                        break;
                                 }
                             }
                         } else if(chatCommand.length == 2) {
                             //if there is no parameter, then this is appending a second door to an adhoc door set:
-                            addhocDoorPairAdd(msg.selected, msg.who);
+                            createManagedToken(msg, 'adhocDoorCompanion');
                         } else {
                             help(msg.who, "adhocDoorAdd");
                         }
