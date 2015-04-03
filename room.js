@@ -401,19 +401,32 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return ('undefined' === value || !value) ? '' : value;
     },
     
-    validateSingleSelection = function(msg, selectionType) {
-        if(!msg.selected || msg.selected.length < 1) {
-            sendWhisper(msg.who, "You need to have an image selected.");
-        } else if(msg.selected.length > 1) {
-            sendWhisper(msg.who, "You should only have one image selected.");
+    //validates that there is exactly one of each selection type:
+    validateSelections = function(msg, selectionTypes) {
+        if(!msg.selected || msg.selected.length !== selectionTypes.length) {
+            sendWhisper(msg.who, 'You need to have ' + selectionTypes.length  + ' image(s) selected.');
         } else {
-            var token = getManagedTokenById(msg.selected[0]._id);
+            selectionTypes.forEach(function(selectionType) {
+                var found = false;
+                
+                msg.selected.forEach(function(selection) {
+                    var token = getManagedTokenById(selection._id);
+                    
+                    if(!token) {
+                        if(selectionType == 'empty') {
+                            found = true;
+                        }
+                    } else if(token.isType(selectionType)) {
+                        found = true;
+                    }
+                });
+                
+                if(!found) {
+                    return false;
+                }
+            });
             
-            if(!token && selectionType == 'empty') {
-                return true;
-            } else {
-                return token.isType(selectionType);
-            }
+            return true;
         }
         
         return false;
@@ -708,19 +721,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         }
                         break;*/
                     case "adhocWallAdd":
-                        if(validateSingleSelection(msg, 'empty')) {
+                        if(validateSelections(msg, ['empty'])) {
                             createManagedToken(msg, 'adhocWall');
                         }
                         break;
                     case "adhocWallRemove":
-                        if(validateSingleSelection(msg, 'adhocWall')) {
+                        if(validateSelections(msg, ['adhocWall'])) {
                             destroyManagedToken(msg);
                         }
                         break;
                     case "adhocDoorAdd":
                         if(chatCommand.length == 3) {
                             //if there is a parameter, then this is the first door of an adhoc door set:
-                            if(validateSingleSelection(msg, 'empty')) {
+                            if(validateSelections(msg, ['empty'])) {
                                 switch(chatCommand[2]) {
                                     case "open":
                                         createManagedToken(msg, 'adhocDoorOpen');
@@ -735,7 +748,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         } else if(chatCommand.length == 2) {
                             //if there is no parameter, then this is appending a second door to an adhoc door set:
-                            createManagedToken(msg, 'adhocDoorCompanion');
+                            if(validateSelections(msg, ['empty', 'adhocDoor'])) {
+                                createManagedToken(msg, 'adhocDoorCompanion');
+                            }
                         } else {
                             help(msg.who, "adhocDoorAdd");
                         }
