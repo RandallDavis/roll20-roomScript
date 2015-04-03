@@ -426,7 +426,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
     createLosWall = function(parent, pointA, pointB) {
-        var isPositiveSlope = (((pointB.y - pointA.y) === 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) > 0));
+        var isPositiveSlope = (((pointB.y - pointA.y) === 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) >= 0));
         var top = Math.min(pointA.y, pointB.y);
         var left = Math.min(pointA.x, pointB.x);
         var path;
@@ -434,17 +434,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
         //create a path for a segment from A to B relative to (left,top):
         if(isPositiveSlope) {
             if(pointA.x > pointB.x) {
-                path = "[[\"M\"," + (pointA.x - pointB.x) + "," + (pointA.y - pointB.y) + "],[\"L\",0,0]]";
+                path = "[[\"M\"," + Math.abs(pointA.x - pointB.x) + "," + Math.abs(pointA.y - pointB.y) + "],[\"L\",0,0]]";
             } else {
-                path = "[[\"M\",0,0],[\"L\"," + (pointB.x - pointA.x) + "," + (pointB.y - pointA.y) + "]]";
+                path = "[[\"M\",0,0],[\"L\"," + Math.abs(pointB.x - pointA.x) + "," + Math.abs(pointB.y - pointA.y) + "]]";
             }
         } else {
             if(pointA.x > pointB.x) {
-                path = "[[\"M\"," + (pointA.x - pointB.x) + ",0],[\"L\",0," + (pointB.y - pointA.y) + "]]";
+                path = "[[\"M\"," + Math.abs(pointA.x - pointB.x) + ",0],[\"L\",0," + Math.abs(pointB.y - pointA.y) + "]]";
             } else {
-                path = "[[\"M\",0," + (pointA.y - pointB.y) + "],[\"L\"," + (pointB.x - pointA.x) + ",0]]";
+                path = "[[\"M\",0," + Math.abs(pointA.y - pointB.y) + "],[\"L\"," + Math.abs(pointB.x - pointA.x) + ",0]]";
             }
         }
+        
+        log(path);
         
         //create a segment path on the walls layer to block LoS:
         var wall = createObj("path", {
