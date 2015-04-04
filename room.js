@@ -18,9 +18,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
             log('APIRoomManagement: Resetting state. Door images will need to be set.');
             state.APIRoomManagement = {
                 version: schemaVersion,
-                wallColor: "#00FF00",
-                doorOpenPicUrl: "",
-                doorClosedPicUrl: "",
+                wallColor: '#00FF00',
+                doorOpenPicUrl: '',
+                doorClosedPicUrl: '',
                 adhocDoorMoveMode: 0,
                 doorPrivsDefault: 1 //0 = gm only, 1 = all players
             };
@@ -89,7 +89,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         },
         getProperty: function(property) {
             if(!property) {
-                throw new Error("No property specified in getProperty().");
+                throw new Error('No property specified in getProperty().');
             }
             
             if('undefined' === typeof(this['_' + property])) {
@@ -100,7 +100,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         },
         setProperty: function(property, value) {
             if(!property) {
-                throw new Error("No property specified in setProperty().");
+                throw new Error('No property specified in setProperty().');
             }
             
             if(!value) {
@@ -109,18 +109,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
             
             switch(property) {
                 default:
-                    throw new Error(property + " is unknown in setProperty().");
+                    throw new Error(property + ' is unknown in setProperty().');
                     break;
             }
         },
         initializeCollectionProperty: function(property) {
             if(!property) {
-                throw new Error("No property specified in initializeCollectionProperty().");
+                throw new Error('No property specified in initializeCollectionProperty().');
             }
             
             switch(property) {
                 default:
-                    throw new Error(property + " is unknown in initializeCollectionProperty().");
+                    throw new Error(property + ' is unknown in initializeCollectionProperty().');
                     break;
             }
         }
@@ -153,7 +153,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     managedToken.prototype.getPoints = function() {
         var token = this.getProperty('token');
-        return getPoints(token.get("width"), token.get("height"), token.get("rotation"), token.get("left"), token.get("top"));
+        return getPoints(token.get('width'), token.get('height'), token.get('rotation'), token.get('left'), token.get('top'));
     };
     
     managedToken.prototype.shouldDrawWalls = function() {
@@ -248,11 +248,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.initializeCollectionProperty('wallIds');
         
         var token = this.getProperty('token');
-        token.set("height", 0);
-        token.set("width", 0);
-        token.set("top", 10);
-        token.set("left", 10);
-        token.set("layer", "gmlayer");
+        token.set('height', 0);
+        token.set('width', 0);
+        token.set('top', 10);
+        token.set('left', 10);
+        token.set('layer', 'gmlayer');
         
         this.save();
     };
@@ -308,7 +308,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             this.setProperty('wallIds', metaDoor[2]);
         }
         
-        var metaPositioning = (token.get("gmnotes").match(/\*z\*([^\*]+)/g));
+        var metaPositioning = (token.get('gmnotes').match(/\*z\*([^\*]+)/g));
         if(metaPositioning) {
             metaPositioning = metaPositioning[0].substring(3).split('.');
             this.setProperty('positionWidth', metaPositioning[0]);
@@ -347,14 +347,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 + saveBlank(this.getProperty('doorType')) + '.' 
                 + saveBlank(companionDoorId) + '.' 
                 + saveBlank(wallId)
-                + "*%3Cbr%3E"
+                + '*%3Cbr%3E'
             + '*z*' 
                 + token.get('width') + '.' 
                 + token.get('height') + '.' 
                 + token.get('rotation') + '.' 
                 + token.get('left') + '.' 
                 + token.get('top') 
-                + "*%3Cbr%3E";
+                + '*%3Cbr%3E';
         token.set('gmnotes', newGmNotes);
     };
     
@@ -408,12 +408,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 
                 var companionDoorToken = companionDoor.getProperty('token');
                 
-                companionDoorToken.set("width", parseInt(this.getProperty('positionWidth')));
-                companionDoorToken.set("height", parseInt(this.getProperty('positionHeight')));
-                companionDoorToken.set("rotation", parseInt(this.getProperty('positionRotation')));
-                companionDoorToken.set("left", parseInt(this.getProperty('positionLeft')));
-                companionDoorToken.set("top", parseInt(this.getProperty('positionTop')));
-                companionDoorToken.set("layer", this.getProperty('token').get('layer'));
+                companionDoorToken.set('width', parseInt(this.getProperty('positionWidth')));
+                companionDoorToken.set('height', parseInt(this.getProperty('positionHeight')));
+                companionDoorToken.set('rotation', parseInt(this.getProperty('positionRotation')));
+                companionDoorToken.set('left', parseInt(this.getProperty('positionLeft')));
+                companionDoorToken.set('top', parseInt(this.getProperty('positionTop')));
+                companionDoorToken.set('layer', this.getProperty('token').get('layer'));
                 
                 companionDoor.save();
                 companionDoor.draw();
@@ -562,10 +562,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         if(token.isType('door')) {
             if(state.APIRoomManagement.doorPrivsDefault === 0) {
-                token.getProperty('token').set("layer", "map");
+                token.getProperty('token').set('layer', 'map');
             } else {
-                token.getProperty('token').set("controlledby", "all");
-                token.getProperty('token').set("layer", "objects");
+                token.getProperty('token').set('controlledby', 'all');
+                token.getProperty('token').set('layer', 'objects');
             }
         }
         
@@ -587,22 +587,22 @@ var APIRoomManagement = APIRoomManagement || (function() {
         //create a path for a segment from A to B relative to (left,top):
         if(isPositiveSlope) {
             if(pointA.x > pointB.x) {
-                path = "[[\"M\"," + Math.abs(pointA.x - pointB.x) + "," + Math.abs(pointA.y - pointB.y) + "],[\"L\",0,0]]";
+                path = '[[\"M\",' + Math.abs(pointA.x - pointB.x) + ',' + Math.abs(pointA.y - pointB.y) + '],[\"L\",0,0]]';
             } else {
-                path = "[[\"M\",0,0],[\"L\"," + Math.abs(pointB.x - pointA.x) + "," + Math.abs(pointB.y - pointA.y) + "]]";
+                path = '[[\"M\",0,0],[\"L\",' + Math.abs(pointB.x - pointA.x) + ',' + Math.abs(pointB.y - pointA.y) + ']]';
             }
         } else {
             if(pointA.x > pointB.x) {
-                path = "[[\"M\"," + Math.abs(pointA.x - pointB.x) + ",0],[\"L\",0," + Math.abs(pointB.y - pointA.y) + "]]";
+                path = '[[\"M\",' + Math.abs(pointA.x - pointB.x) + ',0],[\"L\",0,' + Math.abs(pointB.y - pointA.y) + ']]';
             } else {
-                path = "[[\"M\",0," + Math.abs(pointA.y - pointB.y) + "],[\"L\"," + Math.abs(pointB.x - pointA.x) + ",0]]";
+                path = '[[\"M\",0,' + Math.abs(pointA.y - pointB.y) + '],[\"L\",' + Math.abs(pointB.x - pointA.x) + ',0]]';
             }
         }
         
         //create a segment path on the walls layer to block LoS:
-        var wall = createObj("path", {
-            layer: "walls",
-            pageid: parent.get("pageid"),
+        var wall = createObj('path', {
+            layer: 'walls',
+            pageid: parent.get('pageid'),
             top: top,
             left: left,
             stroke: state.APIRoomManagement.wallColor,
@@ -777,11 +777,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
     /* text command handling - begin */
     
     sendWhisper = function(to, message) {
-        sendChat("Room API", "/w " + to.split(" ")[0] + " " + message);  
+        sendChat('Room API', '/w ' + to.split(' ')[0] + ' ' + message);  
     },
     
     handleUserInput = function(msg) {
-        if(msg.type == "api" && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
+        if(msg.type == 'api' && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
             var chatCommand = msg.content.split(' ');
             if(chatCommand.length == 1) {
                 //intuit(msg);
@@ -835,29 +835,29 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         }
                         break;*/
-                    case "adhocWallAdd":
+                    case 'adhocWallAdd':
                         if(validateSelections(msg, ['empty'])) {
                             createManagedToken(msg, 'adhocWall');
                         }
                         break;
-                    case "adhocWallRemove":
+                    case 'adhocWallRemove':
                         if(validateSelections(msg, ['adhocWall'])) {
                             destroyManagedToken(msg);
                         }
                         break;
-                    case "adhocDoorAdd":
+                    case 'adhocDoorAdd':
                         if(chatCommand.length == 3) {
                             //if there is a parameter, then this is the first door of an adhoc door set:
                             if(validateSelections(msg, ['empty'])) {
                                 switch(chatCommand[2]) {
-                                    case "open":
+                                    case 'open':
                                         createManagedToken(msg, 'adhocDoorOpen');
                                         break;
-                                    case "closed":
+                                    case 'closed':
                                         createManagedToken(msg, 'adhocDoorClosed');
                                         break;
                                     default:
-                                        help(msg.who, "adhocDoorAdd");
+                                        help(msg.who, 'adhocDoorAdd');
                                         break;
                                 }
                             }
@@ -867,7 +867,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                                 createManagedToken(msg, 'adhocDoorCompanion');
                             }
                         } else {
-                            help(msg.who, "adhocDoorAdd");
+                            help(msg.who, 'adhocDoorAdd');
                         }
                         break;
                     /*case "adhocDoorMove":
@@ -890,7 +890,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             help(msg.who, "adhocDoorMove");
                         }
                         break;*/
-                    case "adhocDoorRemove":
+                    case 'adhocDoorRemove':
                         if(validateSelections(msg, ['adhocDoor'])) {
                             destroyManagedToken(msg);
                         }
@@ -910,7 +910,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         sendWhisper(msg.who, "not implemented yet");
                         break;*/
                     default:
-                        help(msg.who, "");
+                        help(msg.who, '');
                         break;
                 }
             }
