@@ -494,23 +494,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     };
     
-    door.prototype.hide = function() {
-        this.load();
-        
-        var oldWallIds = this.getProperty('wallIds');
-        deleteObjects(oldWallIds);
-        this.initializeCollectionProperty('wallIds');
-        
-        var token = this.getProperty('token');
-        token.set('height', 0);
-        token.set('width', 0);
-        token.set('top', 10);
-        token.set('left', 10);
-        token.set('layer', 'gmlayer');
-        
-        this.save();
-    };
-    
     inheritPrototype(roomDoor, door);
     
     inheritPrototype(adhocDoor, door);
@@ -648,6 +631,23 @@ var APIRoomManagement = APIRoomManagement || (function() {
         deleteObjects(oldWallIds);
     };
     
+    adhocDoor.prototype.hide = function() {
+        this.load();
+        
+        var oldWallIds = this.getProperty('wallIds');
+        deleteObjects(oldWallIds);
+        this.initializeCollectionProperty('wallIds');
+        
+        var token = this.getProperty('token');
+        token.set('height', 0);
+        token.set('width', 0);
+        token.set('top', 10);
+        token.set('left', 10);
+        token.set('layer', 'gmlayer');
+        
+        this.save();
+    };
+    
     adhocDoor.prototype.attemptToggle = function() {
         if(state.APIRoomManagement.adhocDoorMoveMode == 1) {
             this.draw();
@@ -778,6 +778,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             }
         }
         
+        deleteObjects(oldWallIds);
+        
         //create open door if it doesn't exist:
         var doorOpen = this.getProperty('doorOpen');
         if(!doorOpen) {
@@ -787,8 +789,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             } else {
                 var doorOpenToken = createObj('graphic', {
                         imgsrc: imgsrc,
-                        layer: "gmlayer",
-                        pageid: roomToken.get("pageid"),
+                        layer: 'gmlayer',
+                        pageid: roomToken.get('pageid'),
                         top: 10,
                         left: 10,
                         width: 1,
@@ -811,8 +813,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             } else {
                 var doorClosedToken = createObj('graphic', {
                         imgsrc: imgsrc,
-                        layer: "gmlayer",
-                        pageid: roomToken.get("pageid"),
+                        layer: 'gmlayer',
+                        pageid: roomToken.get('pageid'),
                         top: 10,
                         left: 10,
                         width: 1,
@@ -825,13 +827,51 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 this.setProperty('doorClosed', doorClosed);
             }
         }
-    
-       
-        deleteObjects(oldWallIds);
         
+        //wire up companion door relationships in case they don't already exist:
+        if(doorOpen && doorClosed) {
+            doorOpen.setProperty('companionDoor', doorClosed);
+            doorClosed.setProperty('companionDoor', doorOpen);
+        }
         
+        var activeDoor, inactiveDoor;
+        switch(this.getProperty('sideType')) {
+            case 'doorOpen':
+                activeDoor = doorOpen;
+                inactiveDoor = doorClosed;
+                break;
+            case 'doorClosed':
+                activeDoor = doorClosed;
+                inactiveDoor = doorOpen;
+                break;
+            default:
+                break;
+        }
         
-        //TODO
+        if(activeDoor) {
+            var activeDoorToken = activeDoor.getProperty('token');
+            if(activeDoorToken.get('controlledby').match(/^all/) && roomToken.get('layer') != 'gmlayer') {
+                activeDoorToken.set('layer', 'objects');
+                toBack(activeDoorToken);
+            } else {
+                activeDoorToken.set('layer', 'gmlayer');
+                toFront(activeDoorToken);
+            }
+            activeDoorToken.set("height", 26);
+            activeDoorToken.set("width", 70);
+            activeDoorToken.set('rotation', roomToken.get('rotation') + sideRotation + 90); //TODO: this might overflow - take a mod
+            activeDoorToken.set('top', doorPosition.y);
+            activeDoorToken.set('left', doorPosition.x);
+        }
+        
+        if(inactiveDoor) {
+            var inactiveDoorToken = inactiveDoor.getProperty('token');
+            inactiveDoorToken.set('height', 0);
+            inactiveDoorToken.set('width', 0);
+            inactiveDoorToken.set('top', 10);
+            inactiveDoorToken.set('left', 10);
+            inactiveDoorToken.set('layer', 'gmlayer');
+        }
     };
     
     roomSideDoor.prototype.destroy = function() {
