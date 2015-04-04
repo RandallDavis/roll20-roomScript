@@ -71,6 +71,26 @@ var APIRoomManagement = APIRoomManagement || (function() {
     adhocDoor = function(token) {
         door.call(this, token);
         this._type.push('adhocDoor');
+    },
+    
+    roomSide = function() {
+        typedObject.call(this);
+        this._type.push('roomSide');
+    },
+    
+    roomSideEmpty = function() {
+        roomSide.call(this);
+        this._type.push('roomSideEmpty');
+    },
+    
+    roomSideWall = function() {
+        roomSide.call(this);
+        this._type.push('roomSideWall');
+    },
+    
+    roomSideDoor = function() {
+        roomSide.call(this);
+        this._type.push('roomSideDoor');
     };
     
     typedObject.prototype = {
@@ -131,6 +151,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     managedToken.prototype.setProperty = function(property, value) {
         switch(property) {
             case 'token':
+                this['_' + property] = value;
+                break;
             case 'wallIds':
                 this['_' + property].push(['path', value]);
                 break;
@@ -143,7 +165,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     managedToken.prototype.initializeCollectionProperty = function(property) {
         switch(property) {
             case 'wallIds':
-                    this['_' + property] = new Array();
+                this['_' + property] = new Array();
                 break;
             default:
                 typedObject.prototype.initializeCollectionProperty.call(this, property);
@@ -181,8 +203,75 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     inheritPrototype(room, managedToken);
     
+    room.prototype.setProperty = function(property, value) {
+        switch(property) {
+            case 'sides':
+                this['_' + property].push(value);
+                break;
+            default:
+                managedToken.prototype.setProperty.call(this, property, value);
+                break;
+        }
+    };
+    
+    room.prototype.initializeCollectionProperty = function(property) {
+        switch(property) {
+            case 'sides':
+                this['_' + property] = new Array();
+                break;
+            default:
+                managedToken.prototype.initializeCollectionProperty.call(this, property);
+                break;
+        }
+    };
+    
     room.prototype.load = function() {
-        //TODO
+        var metaSides = this.getProperty('token').get('gmnotes').match(/\*\S\*([^\*]+)/g);
+        this.initializeCollectionProperty('sides');
+        if(metaSides) {
+            metaSides.forEach(function(metaSide) {
+                var sideOfRoom = metaSide.substring(1, 2);
+                var side;
+                metaSide = metaSide.substring(3).split('.');
+                switch(metaSide[0]) {
+                    case 'empty':
+                        side = new roomSideEmpty();
+                        break;
+                    case 'wall':
+                        side = new roomSideWall();
+                        break;
+                    case 'doorOpen':
+                    case 'doorClosed':
+                        side = new roomSideDoor();
+                        var doorOpen = getManagedTokenById(metaSide[1]);
+                        var doorClosed = getManagedTokenById(metaSide[2]);
+                        side.setProperty('doorOpen', doorOpen);
+                        side.setProperty('doorClosed', doorClosed);
+                        break;
+                    default:
+                        log('Unknown sideType in room.load().');
+                        break;
+                }
+                
+                side.setProperty('sideOfRoom', sideOfRoom);
+                side.setProperty('sideType', metaSide[0]);
+                
+                side.initializeCollectionProperty('wallIds');
+                switch(metaSide[0]) {
+                    case 'doorOpen':
+                        this.setProperty('wallIds', metaSide[metaSide.length - 2]);
+                    case 'doorClosed':
+                    case 'wall':
+                        this.setProperty('wallIds', metaSide[metaSide.length - 1]);
+                        break;
+                    default:
+                        log('Unknown sideType in room.load().');
+                        break;
+                }
+                
+                this.setProperty('sides', side);
+            });
+        }
     };
     
     room.prototype.save = function() {
@@ -193,7 +282,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     room.prototype.draw = function() {
         this.load();
-        var oldWallIds = this.getProperty('wallIds');
+        //var oldWallIds = this.getProperty('wallIds');
         
         /*if(this.shouldDrawWalls()) {
             var points = this.getPoints();
@@ -205,11 +294,66 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }*/
         
         this.save();
-        this.deleteObjects(oldWallIds);
+        //this.deleteObjects(oldWallIds);
     };
     
     room.prototype.destroy = function() {
         managedToken.prototype.destroy.call(this);
+    };
+    
+    room.prototype.addSide = function(command, msg) {
+        var commands = command.split(' ');
+        
+        //validate side:
+        switch(commands[0]) {
+            case 't':
+            case 'b':
+            case 'l':
+            case 'r':
+                break;
+            default:
+                sendWhisper(who, "Side must be 't', 'b', 'l', or 'r'.");
+                return;
+        }
+        
+        //validate type:
+        switch(commands[1]) {
+            case 'empty':
+            case 'wall':
+            case 'doorClosed':
+            case 'doorOpen':
+                break;
+            default:
+                sendWhisper(who, "Type must be 'empty', 'wall', 'doorClosed', or 'doorOpen'.");
+                return;
+        }
+        
+        this.load();
+        
+        
+        
+        /*
+        var room = selectedRoom(selected, who);
+        
+        if(room) {
+            //make sure the side doesn't already exist:
+            var gmNotes = room.get("gmnotes");
+            var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
+            var sideMeta;
+            
+            if(sideMetas) {
+                for(var i = 0;i < sideMetas.length;i++) {
+                    if (sideMetas[i].substring(1, 2) == commands[0]) {
+                        sendWhisper(who, "That side is already on that room.");
+                        return;
+                    } 
+                }
+            }
+            
+            //add the side:
+            room.set("gmnotes", gmNotes + "*" + commands[0] + "*" + commands[1] + "*%3Cbr%3E");
+            drawRoom(room);
+        */
     };
     
     inheritPrototype(adhocWall, managedToken);
@@ -455,6 +599,52 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 
                 //TODO: visual alert
             }
+        }
+    };
+    
+    inheritPrototype(roomSide, typedObject);
+    
+    roomSide.prototype.setProperty = function(property, value) {
+        switch(property) {
+            case 'sideOfRoom':
+            case 'sideType':
+                this['_' + property] = value;
+                break;
+            case 'wallIds':
+                this['_' + property].push(['path', value]);
+                break;
+            default:
+                typedObject.prototype.setProperty.call(this, property, value);
+                break;
+        }
+    };
+    
+    roomSide.prototype.initializeCollectionProperty = function(property) {
+        switch(property) {
+            case 'wallIds':
+                this['_' + property] = new Array();
+                break;
+            default:
+                typedObject.prototype.initializeCollectionProperty.call(this, property);
+                break;
+        }
+    };
+    
+    inheritPrototype(roomSideEmpty, roomSide);
+    
+    inheritPrototype(roomSideWall, roomSide);
+    
+    inheritPrototype(roomSideDoor, roomSide);
+    
+    roomSideDoor.prototype.setProperty = function(property, value) {
+        switch(property) {
+            case 'doorOpen':
+            case 'doorClosed':
+                this['_' + property] = value;
+                break;
+            default:
+                roomSide.prototype.setProperty.call(this, property, value);
+                break;
         }
     };
     
