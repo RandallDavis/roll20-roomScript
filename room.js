@@ -161,20 +161,55 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     managedToken.prototype.deleteObjects = function(objectIds) {
-        objectIds.forEach(function(objectId) {
-            var obj = getObj(objectId[0], objectId[1]);
-            if(obj) {
-                setTimeout(function() {
-                    obj.remove();
-                }, 5);
-            }
-        });
+        if(objectIds) {
+            objectIds.forEach(function(objectId) {
+                var obj = getObj(objectId[0], objectId[1]);
+                if(obj) {
+                    setTimeout(function() {
+                        obj.remove();
+                    }, 5);
+                }
+            });
+        }
     };
     
     managedToken.prototype.destroy = function() {
         this.load();
         this.deleteObjects(this.getProperty('wallIds'));
         this.getProperty('token').remove();
+    };
+    
+    inheritPrototype(room, managedToken);
+    
+    room.prototype.load = function() {
+        //TODO
+    };
+    
+    room.prototype.save = function() {
+        var newGmNotes = 
+            '*room*%3Cbr%3E';
+        this.getProperty('token').set('gmnotes', newGmNotes);
+    };
+    
+    room.prototype.draw = function() {
+        this.load();
+        var oldWallIds = this.getProperty('wallIds');
+        
+        /*if(this.shouldDrawWalls()) {
+            var points = this.getPoints();
+            var wall;
+            
+            
+            this.initializeCollectionProperty('wallIds');
+            this.setProperty('wallIds', wall.id);
+        }*/
+        
+        this.save();
+        this.deleteObjects(oldWallIds);
+    };
+    
+    room.prototype.destroy = function() {
+        managedToken.prototype.destroy.call(this);
     };
     
     inheritPrototype(adhocWall, managedToken);
@@ -451,6 +486,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         switch(tokenType) {
+            case 'room':
+                return new room(token);
+                break;
             case 'adhocWall':
                 return new adhocWall(token);
                 break;
@@ -509,6 +547,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var token;
         
         switch(tokenType) {
+            case 'room':
+                var emptyToken = getObj('graphic', msg.selected[0]._id);
+                token = new room(emptyToken);
+                break;
             case 'adhocWall':
                 var emptyToken = getObj('graphic', msg.selected[0]._id);
                 token = new adhocWall(emptyToken);
@@ -796,11 +838,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             helpText.shift();
                             help(msg.who, helpText.join(" "));
                         }
+                        break;*/
+                    case 'roomAdd':
+                        if(validateSelections(msg, ['empty'])) {
+                            createManagedToken(msg, 'room');
+                        }
                         break;
-                    case "roomAdd":
-                        roomAdd(msg.selected, msg.who);
-                        break;
-                    case "roomRemove":
+                    /*case "roomRemove":
                         roomRemove(msg.selected, msg.who);
                         break;
                     case "roomSideAdd":
