@@ -182,22 +182,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return (this.getProperty('token').get('layer') !== 'gmlayer');
     };
     
-    managedToken.prototype.deleteObjects = function(objectIds) {
-        if(objectIds) {
-            objectIds.forEach(function(objectId) {
-                var obj = getObj(objectId[0], objectId[1]);
-                if(obj) {
-                    setTimeout(function() {
-                        obj.remove();
-                    }, 5);
-                }
-            });
-        }
-    };
-    
     managedToken.prototype.destroy = function() {
         this.load();
-        this.deleteObjects(this.getProperty('wallIds'));
+        deleteObjects(this.getProperty('wallIds'));
         this.getProperty('token').remove();
     };
     
@@ -333,8 +320,26 @@ var APIRoomManagement = APIRoomManagement || (function() {
             token.set('layer', 'maps');
         }
         
+        var points = this.getPoints();
+        
         this.getProperty('sides').forEach(function(side) {
-            side.draw();
+            switch(side.getProperty('sideOfRoom')) {
+                case 'l':
+                    side.draw(token, points.topLeft, points.botLeft, token.get('height'), 0, points.midLeft);
+                    break;
+                case 'r':
+                    side.draw(token, points.topRight, points.botRight, token.get('height'), 180, points.midRight);
+                    break;
+                case 't':
+                    side.draw(token, points.topLeft, points.topRight, token.get('width'), 90, points.topMid);
+                    break;
+                case 'b':
+                    side.draw(token, points.botLeft, points.botRight, token.get('width'), 270, points.botMid);
+                    break;
+                default:
+                    log('Unknown sideOfRoom in room.draw().');
+                    break;
+            }
         });
         
         this.save();
@@ -470,7 +475,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         this.save();
-        this.deleteObjects(oldWallIds);
+        deleteObjects(oldWallIds);
     };
     
     inheritPrototype(door, managedToken);
@@ -491,7 +496,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.load();
         
         var oldWallIds = this.getProperty('wallIds');
-        this.deleteObjects(oldWallIds);
+        deleteObjects(oldWallIds);
         this.initializeCollectionProperty('wallIds');
         
         var token = this.getProperty('token');
@@ -636,7 +641,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         this.save();
-        this.deleteObjects(oldWallIds);
+        deleteObjects(oldWallIds);
     };
     
     adhocDoor.prototype.attemptToggle = function() {
@@ -702,15 +707,28 @@ var APIRoomManagement = APIRoomManagement || (function() {
         //TODO: destroy walls here
     };
     
+    roomSide.prototype.shouldDrawWalls = function(layer) {
+        return (layer !== 'gmlayer');
+    };
+    
     //intentional no-op:
-    roomSide.prototype.draw = function() {};
+    roomSide.prototype.draw = function(roomToken, pointA, pointB, sideLength, sideRotation, doorPosition) {};
     
     inheritPrototype(roomSideEmpty, roomSide);
     
     inheritPrototype(roomSideWall, roomSide);
     
-    roomSideWall.prototype.draw = function() {
-        //TODO
+    roomSideWall.prototype.draw = function(roomToken, pointA, pointB, sideLength, sideRotation, doorPosition) {
+        var oldWallIds = this.getProperty('wallIds');
+        
+        if(this.shouldDrawWalls(roomToken.get('layer'))) {
+            var wall = createLosWall(roomToken, pointA, pointB);
+            
+            this.initializeCollectionProperty('wallIds');
+            this.setProperty('wallIds', wall.id);
+        }
+       
+        deleteObjects(oldWallIds);
     };
     
     inheritPrototype(roomSideDoor, roomSide);
@@ -727,7 +745,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     };
     
-    roomSideDoor.prototype.draw = function() {
+    roomSideDoor.prototype.draw = function(roomToken, pointA, pointB, sideLength, sideRotation, doorPosition) {
         //TODO
     };
     
@@ -783,6 +801,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
     getManagedTokenById = function(tokenId) {
         var token = getObj('graphic', tokenId);
         return getManagedToken(token);
+    },
+    
+    deleteObjects = function(objectIds) {
+        if(objectIds) {
+            objectIds.forEach(function(objectId) {
+                var obj = getObj(objectId[0], objectId[1]);
+                if(obj) {
+                    setTimeout(function() {
+                        obj.remove();
+                    }, 5);
+                }
+            });
+        }
     },
     
     saveBlank = function(value) {
