@@ -226,6 +226,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     room.prototype.load = function() {
+        var room = this;
+        
         var metaSides = this.getProperty('token').get('gmnotes').match(/\*\S\*([^\*]+)/g);
         this.initializeCollectionProperty('sides');
         if(metaSides) {
@@ -243,13 +245,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     case 'doorOpen':
                     case 'doorClosed':
                         side = new roomSideDoor();
+                        
                         var doorOpen = getManagedTokenById(metaSide[1]);
                         var doorClosed = getManagedTokenById(metaSide[2]);
                         side.setProperty('doorOpen', doorOpen);
                         side.setProperty('doorClosed', doorClosed);
                         break;
                     default:
-                        log('Unknown sideType in room.load().');
+                        log('Unknown sideType of ' + metaSide[0] + ' in room.load().');
                         break;
                 }
                 
@@ -259,17 +262,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 side.initializeCollectionProperty('wallIds');
                 switch(metaSide[0]) {
                     case 'doorOpen':
-                        this.setProperty('wallIds', metaSide[metaSide.length - 2]);
+                        side.setProperty('wallIds', metaSide[metaSide.length - 2]);
                     case 'doorClosed':
                     case 'wall':
-                        this.setProperty('wallIds', metaSide[metaSide.length - 1]);
+                        side.setProperty('wallIds', metaSide[metaSide.length - 1]);
                         break;
                     default:
-                        log('Unknown sideType in room.load().');
                         break;
                 }
                 
-                this.setProperty('sides', side);
+                room.setProperty('sides', side);
             });
         }
     };
@@ -277,24 +279,65 @@ var APIRoomManagement = APIRoomManagement || (function() {
     room.prototype.save = function() {
         var newGmNotes = 
             '*room*%3Cbr%3E';
+        
+        var sides = this.getProperty('sides');
+        sides.forEach(function(side) {
+            newGmNotes = newGmNotes 
+                + '*' + side.getProperty('sideOfRoom') + '*'
+                + side.getProperty('sideType');
+                
+            if(side.isType('roomSideWall')) {
+                newGmNotes = newGmNotes
+                    + '.' + side.getProperty('wallIds')[0][1];
+            }
+                
+            if(side.isType('roomSideDoor')) {
+                var doorOpen = side.getProperty('doorOpen');
+                if(doorOpen) {
+                    newGmNotes = newGmNotes
+                    + '.' + doorOpen.getProperty('token').id;
+                } else {
+                    newGmNotes = newGmNotes + '.';
+                }
+                
+                var doorClosed = side.getProperty('doorClosed');
+                if(doorClosed) {
+                    newGmNotes = newGmNotes
+                    + '.' + doorClosed.getProperty('token').id;
+                } else {
+                    newGmNotes = newGmNotes + '.';
+                }
+                
+                newGmNotes = newGmNotes
+                    + '.' + side.getProperty('wallIds')[0][1];
+                
+                if(side.getProperty('sideType') == 'doorOpen') {
+                    newGmNotes = newGmNotes
+                        + '.' + side.getProperty('wallIds')[1][1];
+                }
+            }
+            
+            newGmNotes = newGmNotes
+                + '*%3Cbr%3E';
+        });
+            
         this.getProperty('token').set('gmnotes', newGmNotes);
     };
     
     room.prototype.draw = function() {
         this.load();
-        //var oldWallIds = this.getProperty('wallIds');
         
-        /*if(this.shouldDrawWalls()) {
-            var points = this.getPoints();
-            var wall;
-            
-            
-            this.initializeCollectionProperty('wallIds');
-            this.setProperty('wallIds', wall.id);
-        }*/
+        //rooms are always drawn on map layer or gm layer:
+        var token = this.getProperty('token');
+        if(token.get('layer') == 'objects') {
+            token.set('layer', 'maps');
+        }
+        
+        this.getProperty('sides').forEach(function(side) {
+            side.draw();
+        });
         
         this.save();
-        //this.deleteObjects(oldWallIds);
     };
     
     room.prototype.destroy = function() {
@@ -330,30 +373,55 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         this.load();
         
-        
-        
-        /*
-        var room = selectedRoom(selected, who);
-        
-        if(room) {
-            //make sure the side doesn't already exist:
-            var gmNotes = room.get("gmnotes");
-            var sideMetas = gmNotes.match(/\*\S\*([^\*]+)/g);
-            var sideMeta;
-            
-            if(sideMetas) {
-                for(var i = 0;i < sideMetas.length;i++) {
-                    if (sideMetas[i].substring(1, 2) == commands[0]) {
-                        sendWhisper(who, "That side is already on that room.");
-                        return;
-                    } 
-                }
+        //make sure that the room doesn't already have a side where the new one is being added:
+        var found = false;
+        this.getProperty('sides').forEach(function(side) {
+            if(side.getProperty('sideOfRoom') == commands[0]) {
+                found = true;
             }
-            
-            //add the side:
-            room.set("gmnotes", gmNotes + "*" + commands[0] + "*" + commands[1] + "*%3Cbr%3E");
-            drawRoom(room);
-        */
+        });
+        if(found) {
+            sendWhisper(msg.who, "That side is already on that room.");
+            return;
+        }
+        
+        //create the side:
+        var side;
+        switch(commands[1]) {
+            case 'empty':
+                side = new roomSideEmpty();
+                break;
+            case 'wall':
+                side = new roomSideWall();
+                break;
+            case 'doorOpen':
+            case 'doorClosed':
+                side = new roomSideDoor();
+                break;
+            default:
+                log('Unknown sideType in room.addSide().');
+                break;
+        }
+        
+        side.setProperty('sideOfRoom', commands[0]);
+        side.setProperty('sideType', commands[1]);
+        
+        side.initializeCollectionProperty('wallIds');
+        switch(commands[1]) {
+            case 'doorOpen':
+                side.setProperty('wallIds', '');
+            case 'wall':
+            case 'doorClosed':
+                side.setProperty('wallIds', '');
+                break;
+            default:
+                break;
+        }
+        
+        this.setProperty('sides', side);
+        
+        this.save();
+        this.draw();
     };
     
     inheritPrototype(adhocWall, managedToken);
@@ -630,9 +698,20 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     };
     
+    roomSide.prototype.destroy = function() {
+        //TODO: destroy walls here
+    };
+    
+    //intentional no-op:
+    roomSide.prototype.draw = function() {};
+    
     inheritPrototype(roomSideEmpty, roomSide);
     
     inheritPrototype(roomSideWall, roomSide);
+    
+    roomSideWall.prototype.draw = function() {
+        //TODO
+    };
     
     inheritPrototype(roomSideDoor, roomSide);
     
@@ -646,6 +725,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 roomSide.prototype.setProperty.call(this, property, value);
                 break;
         }
+    };
+    
+    roomSideDoor.prototype.draw = function() {
+        //TODO
+    };
+    
+    roomSideDoor.prototype.destroy = function() {
+        //TODO: destroy doors here
     };
     
     /* managed tokens - end */
@@ -807,6 +894,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
     destroyManagedToken = function(msg) {
         var token = getManagedTokenById(msg.selected[0]._id);
         token.destroy();
+    },
+    
+    addRoomSide = function(command, msg) {
+        var room = getManagedTokenById(msg.selected[0]._id);
+        room.addSide(command, msg);
     },
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
@@ -1036,16 +1128,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     /*case "roomRemove":
                         roomRemove(msg.selected, msg.who);
-                        break;
+                        break;*/
                     case "roomSideAdd":
                         if(chatCommand.length != 4) {
                             help(msg.who, "roomSideAdd");
                         } else {
-                            chatCommand = msg.content.replace("!api-room roomSideAdd ", "");
-                            roomSideAdd(chatCommand, msg.selected, msg.who);
+                            if(validateSelections(msg, ['room'])) {
+                                chatCommand = msg.content.replace("!api-room roomSideAdd ", "");
+                                addRoomSide(chatCommand, msg);
+                            }
                         }
                         break;
-                    case "roomSideRemove":
+                    /*case "roomSideRemove":
                         if(chatCommand.length != 3) {
                             help(msg.who, "roomSideRemove");
                         } else {
