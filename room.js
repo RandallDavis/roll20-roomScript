@@ -34,7 +34,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     typedObject = function() {
-        this.type = new Array();
+        this._type = new Array();
     },
     
     /* core - end */
@@ -44,33 +44,33 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     managedToken = function(token) {
         typedObject.call(this);
-        this.type.push('managedToken');
-        this.token = token;
+        this._type.push('managedToken');
+        this._token = token;
     },
     
     room = function(token) {
         managedToken.call(this, token);
-        this.type.push('room');
+        this._type.push('room');
     },
     
     adhocWall = function(token) {
         managedToken.call(this, token);
-        this.type.push('adhocWall');
+        this._type.push('adhocWall');
     },
     
     door = function(token) {
         managedToken.call(this, token);
-        this.type.push('door');
+        this._type.push('door');
     },
     
     roomDoor = function(token) {
         door.call(this, token);
-        this.type.push('roomDoor');
+        this._type.push('roomDoor');
     },
     
     adhocDoor = function(token) {
         door.call(this, token);
-        this.type.push('adhocDoor');
+        this._type.push('adhocDoor');
     };
     
     typedObject.prototype = {
@@ -78,7 +78,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         isType: function(type) {
             var found = false;
            
-            this.type.forEach(function(typeValue) {
+            this._type.forEach(function(typeValue) {
                 if(type == typeValue) {
                     found = true;
                     return;
@@ -130,6 +130,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     managedToken.prototype.setProperty = function(property, value) {
         switch(property) {
+            case 'token':
             case 'wallIds':
                 this['_' + property].push(['path', value]);
                 break;
@@ -151,11 +152,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     managedToken.prototype.getPoints = function() {
-        return getPoints(this.token.get("width"), this.token.get("height"), this.token.get("rotation"), this.token.get("left"), this.token.get("top"));
+        var token = this.getProperty('token');
+        return getPoints(token.get("width"), token.get("height"), token.get("rotation"), token.get("left"), token.get("top"));
     };
     
     managedToken.prototype.shouldDrawWalls = function() {
-        return (this.token.get('layer') !== 'gmlayer');
+        return (this.getProperty('token').get('layer') !== 'gmlayer');
     };
     
     managedToken.prototype.deleteObjects = function(objectIds) {
@@ -172,13 +174,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
     managedToken.prototype.destroy = function() {
         this.load();
         this.deleteObjects(this.getProperty('wallIds'));
-        this.token.remove();
+        this.getProperty('token').remove();
     };
     
     inheritPrototype(adhocWall, managedToken);
     
     adhocWall.prototype.load = function() {
-        var metaWall = this.token.get('gmnotes').match(/\*w\*([^\*]+)/g);
+        var metaWall = this.getProperty('token').get('gmnotes').match(/\*w\*([^\*]+)/g);
         this.initializeCollectionProperty('wallIds');
         if(metaWall) {
             this.setProperty('wallIds', metaWall[0].substring(3));
@@ -198,7 +200,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             + '*w*'
                 + saveBlank(wallId)
                 + '*%3Cbr%3E';
-        this.token.set('gmnotes', newGmNotes);
+        this.getProperty('token').set('gmnotes', newGmNotes);
     };
     
     adhocWall.prototype.draw = function() {
@@ -210,10 +212,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
             var wall;
             
             //draw a LoS wall through the longer dimension of the pic:
-            if(this.token.get('width') > this.token.get('height')) {
-                wall = createLosWall(this.token, points.midLeft, points.midRight);
+            if(this.getProperty('token').get('width') > this.getProperty('token').get('height')) {
+                wall = createLosWall(this.getProperty('token'), points.midLeft, points.midRight);
             } else {
-                wall = createLosWall(this.token, points.topMid, points.botMid);
+                wall = createLosWall(this.getProperty('token'), points.topMid, points.botMid);
             }
             
             this.initializeCollectionProperty('wallIds');
@@ -245,11 +247,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.deleteObjects(oldWallIds);
         this.initializeCollectionProperty('wallIds');
         
-        this.token.set("height", 0);
-        this.token.set("width", 0);
-        this.token.set("top", 10);
-        this.token.set("left", 10);
-        this.token.set("layer", "gmlayer");
+        var token = this.getProperty('token');
+        token.set("height", 0);
+        token.set("width", 0);
+        token.set("top", 10);
+        token.set("left", 10);
+        token.set("layer", "gmlayer");
         
         this.save();
     };
@@ -293,7 +296,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     adhocDoor.prototype.load = function() {
-        var metaDoor = (this.token.get('gmnotes').match(/\*d\*([^\*]+)/g));
+        var token = this.getProperty('token');
+        
+        var metaDoor = (token.get('gmnotes').match(/\*d\*([^\*]+)/g));
         this.initializeCollectionProperty('wallIds');
         if(metaDoor) {
             metaDoor = metaDoor[0].substring(3).split('.');
@@ -303,7 +308,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             this.setProperty('wallIds', metaDoor[2]);
         }
         
-        var metaPositioning = (this.token.get("gmnotes").match(/\*z\*([^\*]+)/g));
+        var metaPositioning = (token.get("gmnotes").match(/\*z\*([^\*]+)/g));
         if(metaPositioning) {
             metaPositioning = metaPositioning[0].substring(3).split('.');
             this.setProperty('positionWidth', metaPositioning[0]);
@@ -313,15 +318,17 @@ var APIRoomManagement = APIRoomManagement || (function() {
             this.setProperty('positionTop', metaPositioning[4]);
         } else {
             //fudge positioning for backward compatibility:
-            this.setProperty('positionWidth', this.token.get('width'));
-            this.setProperty('positionHeight', this.token.get('height'));
-            this.setProperty('positionRotation', this.token.get('rotation'));
-            this.setProperty('positionLeft', this.token.get('left'));
-            this.setProperty('positionTop', this.token.get('top'));
+            this.setProperty('positionWidth', token.get('width'));
+            this.setProperty('positionHeight', token.get('height'));
+            this.setProperty('positionRotation', token.get('rotation'));
+            this.setProperty('positionLeft', token.get('left'));
+            this.setProperty('positionTop', token.get('top'));
         }
     };
     
     adhocDoor.prototype.save = function() {
+        var token = this.getProperty('token');
+        
         var wallIds = this.getProperty('wallIds');
         var wallId;
         if(wallIds && wallIds.length > 0) {
@@ -331,7 +338,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var companionDoor = this.getProperty('companionDoor');
         var companionDoorId;
         if(companionDoor) {
-            companionDoorId = companionDoor.token.id;
+            companionDoorId = companionDoor.getProperty('token').id;
         }
     
         var newGmNotes = 
@@ -342,13 +349,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 + saveBlank(wallId)
                 + "*%3Cbr%3E"
             + '*z*' 
-                + this.token.get('width') + '.' 
-                + this.token.get('height') + '.' 
-                + this.token.get('rotation') + '.' 
-                + this.token.get('left') + '.' 
-                + this.token.get('top') 
+                + token.get('width') + '.' 
+                + token.get('height') + '.' 
+                + token.get('rotation') + '.' 
+                + token.get('left') + '.' 
+                + token.get('top') 
                 + "*%3Cbr%3E";
-        this.token.set('gmnotes', newGmNotes);
+        token.set('gmnotes', newGmNotes);
     };
     
     adhocDoor.prototype.shouldDrawWalls = function() {
@@ -357,6 +364,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     adhocDoor.prototype.draw = function() {
         this.load();
+        var token = this.getProperty('token');
         var oldWallIds = this.getProperty('wallIds');
         
         if(this.shouldDrawWalls()) {
@@ -364,10 +372,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
             var wall;
             
             //draw a LoS wall through the longer dimension of the pic:
-            if(this.token.get('width') > this.token.get('height')) {
-                wall = createLosWall(this.token, points.midLeft, points.midRight);
+            if(token.get('width') > token.get('height')) {
+                wall = createLosWall(token, points.midLeft, points.midRight);
             } else {
-                wall = createLosWall(this.token, points.topMid, points.botMid);
+                wall = createLosWall(token, points.topMid, points.botMid);
             }
             
             this.initializeCollectionProperty('wallIds');
@@ -398,15 +406,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
             } else {
                 companionDoor.load();
                 
-                companionDoor.token.set("width", parseInt(this.getProperty('positionWidth')));
-                companionDoor.token.set("height", parseInt(this.getProperty('positionHeight')));
-                companionDoor.token.set("rotation", parseInt(this.getProperty('positionRotation')));
-                companionDoor.token.set("left", parseInt(this.getProperty('positionLeft')));
-                companionDoor.token.set("top", parseInt(this.getProperty('positionTop')));
-                companionDoor.token.set("layer", this.token.get('layer'));
+                var companionDoorToken = companionDoor.getProperty('token');
+                
+                companionDoorToken.set("width", parseInt(this.getProperty('positionWidth')));
+                companionDoorToken.set("height", parseInt(this.getProperty('positionHeight')));
+                companionDoorToken.set("rotation", parseInt(this.getProperty('positionRotation')));
+                companionDoorToken.set("left", parseInt(this.getProperty('positionLeft')));
+                companionDoorToken.set("top", parseInt(this.getProperty('positionTop')));
+                companionDoorToken.set("layer", this.getProperty('token').get('layer'));
                 
                 companionDoor.save();
                 companionDoor.draw();
+                
+                //TODO: visual alert
             }
         }
     };
@@ -550,10 +562,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         if(token.isType('door')) {
             if(state.APIRoomManagement.doorPrivsDefault === 0) {
-                token.token.set("layer", "map");
+                token.getProperty('token').set("layer", "map");
             } else {
-                token.token.set("controlledby", "all");
-                token.token.set("layer", "objects");
+                token.getProperty('token').set("controlledby", "all");
+                token.getProperty('token').set("layer", "objects");
             }
         }
         
