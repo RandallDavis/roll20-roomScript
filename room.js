@@ -346,6 +346,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     room.prototype.destroy = function() {
+        //TODO: destroy sides
+        
         managedToken.prototype.destroy.call(this);
     };
     
@@ -508,6 +510,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         this.save();
     };
+    
+    inheritPrototype(roomDoor, door);
     
     inheritPrototype(adhocDoor, door);
     
@@ -704,7 +708,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     roomSide.prototype.destroy = function() {
-        //TODO: destroy walls here
+        deleteObjects(this.getProperty('wallIds'));
     };
     
     roomSide.prototype.shouldDrawWalls = function(layer) {
@@ -746,6 +750,87 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     roomSideDoor.prototype.draw = function(roomToken, pointA, pointB, sideLength, sideRotation, doorPosition) {
+        var oldWallIds = this.getProperty('wallIds');
+        
+        //draw walls:
+        if(this.shouldDrawWalls(roomToken.get('layer'))) {
+            this.initializeCollectionProperty('wallIds');
+            
+            switch(this.getProperty('sideType')) {
+                case 'doorOpen':
+                    //draw walls if wall is wide enough to draw around the door:
+                    if(sideLength >= 80) {
+                        var wall = createLosWall(roomToken, pointA, findPointWithOffset(pointA, doorPosition, 35));
+                        this.setProperty('wallIds', wall.id);
+                        wall = createLosWall(roomToken, findPointWithOffset(pointB, doorPosition, 35), pointB);
+                        this.setProperty('wallIds', wall.id);
+                    } else {
+                        this.setProperty('wallIds', '');
+                        this.setProperty('wallIds', '');
+                    }
+                    break;
+                case 'doorClosed':
+                    var wall = createLosWall(roomToken, pointA, pointB);
+                    this.setProperty('wallIds', wall.id);
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        //create open door if it doesn't exist:
+        var doorOpen = this.getProperty('doorOpen');
+        if(!doorOpen) {
+            var imgsrc = state.APIRoomManagement.doorOpenPicUrl;
+            if(!imgsrc) {
+                log('Open door pic not set, so drawing room without open doors.');
+            } else {
+                var doorOpenToken = createObj('graphic', {
+                        imgsrc: imgsrc,
+                        layer: "gmlayer",
+                        pageid: roomToken.get("pageid"),
+                        top: 10,
+                        left: 10,
+                        width: 1,
+                        height: 1,
+                        scale: 0.0000001
+                    });
+                
+                doorOpen = new roomDoor(doorOpenToken);
+                doorOpen.setProperty('doorType', 'doorOpen');
+                this.setProperty('doorOpen', doorOpen);
+            }
+        }
+        
+        //create closed door if it doesn't exist:
+        var doorClosed = this.getProperty('doorClosed');
+        if(!doorClosed) {
+            var imgsrc = state.APIRoomManagement.doorClosedPicUrl;
+            if(!imgsrc) {
+                log('Closed door pic not set, so drawing room without closed doors.');
+            } else {
+                var doorClosedToken = createObj('graphic', {
+                        imgsrc: imgsrc,
+                        layer: "gmlayer",
+                        pageid: roomToken.get("pageid"),
+                        top: 10,
+                        left: 10,
+                        width: 1,
+                        height: 1,
+                        scale: 0.0000001
+                    });
+                
+                doorClosed = new roomDoor(doorClosedToken);
+                doorClosed.setProperty('doorType', 'doorClosed');
+                this.setProperty('doorClosed', doorClosed);
+            }
+        }
+    
+       
+        deleteObjects(oldWallIds);
+        
+        
+        
         //TODO
     };
     
@@ -783,6 +868,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(tokenType) {
             case 'room':
                 return new room(token);
+                break;
+            case 'roomDoor':
+                return new roomDoor(token);
                 break;
             case 'adhocWall':
                 return new adhocWall(token);
@@ -1112,6 +1200,48 @@ var APIRoomManagement = APIRoomManagement || (function() {
     	return points;
     },
     
+    //finds a point on the AB segment, that is an 'offset' distance from B:
+    findPointWithOffset = function(pointA, pointB, offset) {
+        var distABx = pointB.x - pointA.x;
+        var distABy = pointB.y - pointA.y;
+        var distAB = Math.sqrt(Math.pow(distABx, 2) + Math.pow(distABy, 2));
+        var distAZ = distAB - offset;
+        var sinA = distABy / distAB;
+        var zY = pointA.y + (sinA * distAZ);
+        var zX = pointA.x + (distABx * (distAZ / distAB));
+        
+        return { x : zX,  y : zY };
+    },
+    
+    //sets the door image for capturing to that of the selected image:
+    setDoorUrl = function(msg, doorType) {
+        var imgsrc = getCleanImgsrc(getObj('graphic', msg.selected[0]._id).get('imgsrc'));
+        
+        switch(doorType) {
+            case 'doorClosed':
+                state.APIRoomManagement.doorClosedPicUrl = imgsrc;
+                sendWhisper(msg.who, 'Closed door image set.');
+                break;
+            case 'doorOpen': 
+                state.APIRoomManagement.doorOpenPicUrl = imgsrc;
+                sendWhisper(msg.who, 'Open door image set.');
+                break;
+            default:
+                log('Unknown type ' + doorType + ' in setDoorUrl.');
+                break;
+        }
+    },
+    
+    //find imgsrc that is legal for object creation:
+    getCleanImgsrc = function (imgsrc) {
+        var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max)(.*)$/);
+        
+        if(parts) {
+          return parts[1] + 'thumb' + parts[3];
+        }
+        return;
+    },
+    
     handleTokenChange = function(graphic) {
         var token = getManagedToken(graphic);
         
@@ -1177,23 +1307,27 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             chatCommand = msg.content.replace("!api-room roomSideRemove ", "");
                             roomSideRemove(chatCommand, msg.selected, msg.who);
                         }
-                        break;
-                    case "roomDoorImageSet":
+                        break;*/
+                    case 'roomDoorImageSet':
                         if(chatCommand.length != 3) {
-                            help(msg.who, "roomDoorImageSet");
+                            help(msg.who, 'roomDoorImageSet');
                         } else {
-                            switch(chatCommand[2]) {
-                                case "open":
-                                    setDoorUrl(msg.selected, msg.who, "doorOpen");
-                                    break;
-                                case "closed":
-                                    setDoorUrl(msg.selected, msg.who, "doorClosed");
-                                    break;
-                                default:
-                                    help(msg.who, "roomDoorImageSet");
+                            //TODO: this could be made to allow empty or a door, which would be convenient for state refreshes. Change validateSections, rather than calling it multiple times which would produce multiple whispers:
+                            if(validateSelections(msg, ['empty'])) {
+                                switch(chatCommand[2]) {
+                                    case "open":
+                                        setDoorUrl(msg, 'doorOpen');
+                                        break;
+                                    case "closed":
+                                        setDoorUrl(msg, 'doorClosed');
+                                        break;
+                                    default:
+                                        help(msg.who, 'roomDoorImageSet');
+                                        break;
+                                }
                             }
                         }
-                        break;*/
+                        break;
                     case 'adhocWallAdd':
                         if(validateSelections(msg, ['empty'])) {
                             createManagedToken(msg, 'adhocWall');
@@ -1302,4 +1436,6 @@ on('ready', function() {
     
     APIRoomManagement.checkInstall();
     APIRoomManagement.registerEventHandlers();
+    
+    log(state.APIRoomManagement);
 });
