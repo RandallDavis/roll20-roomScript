@@ -319,7 +319,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         //rooms are always drawn on map layer or gm layer:
         var token = this.getProperty('token');
         if(token.get('layer') == 'objects') {
-            token.set('layer', 'maps');
+            token.set('layer', 'map');
         }
         
         var points = this.getPoints();
