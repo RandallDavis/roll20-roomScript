@@ -735,35 +735,44 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.save();
     };
     
+    adhocDoor.prototype.recordPosition = function() {
+        this.load();
+            
+        //update meta position with new placement:
+        var token = this.getProperty('token');
+        this.setProperty('positionWidth', token.get('width'));
+        this.setProperty('positionHeight', token.get('height'));
+        this.setProperty('positionRotation', token.get('rotation'));
+        this.setProperty('positionLeft', token.get('left'));
+        this.setProperty('positionTop', token.get('top'));
+        
+        this.save();
+    };
+    
     adhocDoor.prototype.attemptToggle = function() {
-        if(state.APIRoomManagement.adhocDoorMoveMode == 1) {
-            //TODO: set position meta
+        this.load();
+        
+        var companionDoor = this.getProperty('companionDoor');
+        
+        if(!companionDoor) {
+            log('Attempt to toggle adhoc door that has no companion door. Aborting toggle.');
             this.draw();
         } else {
-            this.load();
+            companionDoor.load();
             
-            var companionDoor = this.getProperty('companionDoor');
+            var companionDoorToken = companionDoor.getProperty('token');
             
-            if(!companionDoor) {
-                log('Attempt to toggle adhoc door that has no companion door. Aborting toggle.');
-                this.draw();
-            } else {
-                companionDoor.load();
-                
-                var companionDoorToken = companionDoor.getProperty('token');
-                
-                companionDoorToken.set('width', parseInt(this.getProperty('positionWidth')));
-                companionDoorToken.set('height', parseInt(this.getProperty('positionHeight')));
-                companionDoorToken.set('rotation', parseInt(this.getProperty('positionRotation')));
-                companionDoorToken.set('left', parseInt(this.getProperty('positionLeft')));
-                companionDoorToken.set('top', parseInt(this.getProperty('positionTop')));
-                companionDoorToken.set('layer', this.getProperty('token').get('layer'));
-                
-                companionDoor.save();
-                companionDoor.draw();
-                
-                //TODO: visual alert
-            }
+            companionDoorToken.set('width', parseInt(this.getProperty('positionWidth')));
+            companionDoorToken.set('height', parseInt(this.getProperty('positionHeight')));
+            companionDoorToken.set('rotation', parseInt(this.getProperty('positionRotation')));
+            companionDoorToken.set('left', parseInt(this.getProperty('positionLeft')));
+            companionDoorToken.set('top', parseInt(this.getProperty('positionTop')));
+            companionDoorToken.set('layer', this.getProperty('token').get('layer'));
+            
+            companionDoor.save();
+            companionDoor.draw();
+            
+            //TODO: visual alert
         }
     };
     
@@ -1419,6 +1428,23 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     },
     
+    setAdhocDoorMoveMode = function(mode) {
+        switch(mode) {
+            case 'on':
+                state.APIRoomManagement.adhocDoorMoveMode = 1;
+                break;
+            case 'off':
+                state.APIRoomManagement.adhocDoorMoveMode = 0;
+                break;
+            case 'toggle':
+                state.APIRoomManagement.adhocDoorMoveMode = (state.APIRoomManagement.adhocDoorMoveMode + 1) % 2;
+                break;
+            default:
+                log('Unexpected mode of ' + mode + ' in setAdhocDoorMoveMode().');
+                break;
+        }
+    },
+    
     //find imgsrc that is legal for object creation:
     getCleanImgsrc = function (imgsrc) {
         var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max)(.*)$/);
@@ -1436,7 +1462,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
             return;
         }
         
-        if(token.isType('door')) {
+        if(token.isType('adhocDoor') && state.APIRoomManagement.adhocDoorMoveMode == 1) {
+            token.recordPosition();
+        } else if(token.isType('door')) {
             token.attemptToggle();
         } else {
             token.draw();
@@ -1554,26 +1582,26 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             help(msg.who, 'adhocDoorAdd');
                         }
                         break;
-                    /*case "adhocDoorMove":
+                    case 'adhocDoorMove':
                         if(chatCommand.length == 3) {
                             //if there is a parameter, then this should explicitly specify a move mode:
                             switch(chatCommand[2]) {
-                                case "on":
-                                    setAdhocDoorMoveMode("on");
+                                case 'on':
+                                    setAdhocDoorMoveMode('on');
                                     break;
-                                case "off":
-                                    setAdhocDoorMoveMode("off");
+                                case 'off':
+                                    setAdhocDoorMoveMode('off');
                                     break;
                                 default:
-                                    help(msg.who, "adhocDoorMove");
+                                    help(msg.who, 'adhocDoorMove');
                             }
                         } else if(chatCommand.length == 2) {
                             //implied toggling of move mode:
-                            setAdhocDoorMoveMode("toggle");
+                            setAdhocDoorMoveMode('toggle');
                         } else {
-                            help(msg.who, "adhocDoorMove");
+                            help(msg.who, 'adhocDoorMove');
                         }
-                        break;*/
+                        break;
                     case 'adhocDoorRemove':
                         if(validateSelections(msg, ['adhocDoor'])) {
                             destroyManagedToken(msg);
