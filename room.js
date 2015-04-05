@@ -522,6 +522,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     };
     
+    door.prototype.toggleLock = function() {
+        this.load();
+        this.setProperty('locked', !this.getProperty('locked'));
+        this.save();
+    };
+    
     inheritPrototype(roomDoor, door);
     
     roomDoor.prototype.setProperty = function(property, value) {
@@ -542,58 +548,92 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         var room = getManagedTokenById(metaRoom);
         this.setProperty('room', room);
+        
+        var metaFeature = this.getProperty('token').get('gmnotes').match(/\*f\*([^\*]+)/g);
+        if(metaFeature) {
+            metaFeature = metaFeature[0].substring(3).split('.');
+            this.setProperty('locked', metaFeature[0] == '1');
+        }
+    };
+    
+    roomDoor.prototype.save = function() {
+        var room = this.getProperty('room');
+        var roomId;
+        if(room) {
+            roomId = room.getProperty('token').id;
+        }
+    
+        var newGmNotes = 
+            '*roomDoor*%3Cbr%3E'
+            + '*p*' 
+                + saveBlank(roomId)
+                + '*%3Cbr%3E'
+            + '*f*'
+                + (this.getProperty('locked') ? '1' : '')
+                + '*%3Cbr%3E';
+        this.getProperty('token').set('gmnotes', newGmNotes);
     };
     
     roomDoor.prototype.attemptToggle = function() {
         this.load();
         var token = this.getProperty('token');
-        
-        //find the roomSide that the door is on:
-        var side;
         var room = this.getProperty('room');
-        room.load();
-        room.getProperty('sides').forEach(function(roomSide) {
-            if(roomSide.isType('roomSideDoor')) {
-                var doorOpen = roomSide.getProperty('doorOpen');
-                var doorClosed = roomSide.getProperty('doorClosed');
-                
-                if((doorOpen && doorOpen.getProperty('token').id == token.id)
-                        || (doorClosed && doorClosed.getProperty('token').id == token.id)) {
-                    side = roomSide;
-                }
-            }
-        });
         
-        if(!side) {
-            log('No room side could be found containing this door.');
-            return;
-        }
-        
-        var newSideType = side.getProperty('sideType') == 'doorClosed' ? 'doorOpen' : 'doorClosed';
-        var newActiveDoor = side.getProperty(newSideType);
-        side.setProperty('sideType', newSideType);
-        
-        room.save();
-        room.draw();
-        
-        var newActiveDoorToken;
-        if(newActiveDoor) {
-            newActiveDoorToken = newActiveDoor.getProperty('token');
-        
+        if(this.getProperty('locked')) {
+            room.draw();
+            
             //visual alert:
             setTimeout(
                 visualAlert(
-                    newSideType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
-                    newActiveDoorToken.get('left'),
-                    newActiveDoorToken.get('top'),
+                    padlockAlertPic,
+                    token.get('left'),
+                    token.get('top'),
                     1.0,
-                    0), //don't blink
+                    2),
                 5);
+        } else {
+            //find the roomSide that the door is on:
+            var side;
+            room.load();
+            room.getProperty('sides').forEach(function(roomSide) {
+                if(roomSide.isType('roomSideDoor')) {
+                    var doorOpen = roomSide.getProperty('doorOpen');
+                    var doorClosed = roomSide.getProperty('doorClosed');
+                    
+                    if((doorOpen && doorOpen.getProperty('token').id == token.id)
+                            || (doorClosed && doorClosed.getProperty('token').id == token.id)) {
+                        side = roomSide;
+                    }
+                }
+            });
+            
+            if(!side) {
+                log('No room side could be found containing this door.');
+                return;
+            }
+            
+            var newSideType = side.getProperty('sideType') == 'doorClosed' ? 'doorOpen' : 'doorClosed';
+            var newActiveDoor = side.getProperty(newSideType);
+            side.setProperty('sideType', newSideType);
+            
+            room.save();
+            room.draw();
+            
+            var newActiveDoorToken;
+            if(newActiveDoor) {
+                newActiveDoorToken = newActiveDoor.getProperty('token');
+            
+                //visual alert:
+                setTimeout(
+                    visualAlert(
+                        newSideType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
+                        newActiveDoorToken.get('left'),
+                        newActiveDoorToken.get('top'),
+                        1.0,
+                        0), //don't blink
+                    5);
+            }
         }
-    };
-    
-    roomDoor.prototype.toggleLock = function() {
-        //TODO
     };
     
     inheritPrototype(adhocDoor, door);
@@ -827,12 +867,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     5);
             }
         }
-    };
-    
-    adhocDoor.prototype.toggleLock = function() {
-        this.load();
-        this.setProperty('locked', !this.getProperty('locked'));
-        this.save();
     };
     
     inheritPrototype(roomSide, typedObject);
@@ -1932,6 +1966,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
             ];
     },
     
+    //intuitive command interface for handling a room door:
+    intuitRoomDoor = function(msg, door) {
+        door.load();
+        
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Features',intuitDoorFeatures(door))
+                +commandLinks('Help',[['help','help']])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Adhoc Door Actions', body);
+    },
+    
     //intuitive command interface for handling an adhoc door:
     intuitAdhocDoor = function(msg, door) {
         door.load();
@@ -1988,6 +2035,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     intuitEmptyImage(msg);
                 } else if(managedToken.isType('room')) {
                     intuitRoom(msg, token); //TODO: pass in managedToken
+                } else if(managedToken.isType('roomDoor')) {
+                    intuitRoomDoor(msg, managedToken);
                 } else if(managedToken.isType('adhocDoor')) {
                     intuitAdhocDoor(msg, managedToken);
                 } else if(managedToken.isType('adhocWall')) {
