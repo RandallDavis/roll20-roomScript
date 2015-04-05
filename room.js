@@ -346,8 +346,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     room.prototype.destroy = function() {
-        //TODO: destroy sides
-        
+        this.load();
+        this.getProperty('sides').forEach(function(side) {
+            side.destroy();
+        });
         managedToken.prototype.destroy.call(this);
     };
     
@@ -886,7 +888,17 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     roomSideDoor.prototype.destroy = function() {
-        //TODO: destroy doors here
+        var doorOpen = this.getProperty('doorOpen');
+        if(doorOpen) {
+            doorOpen.getProperty('token').remove();
+        }
+        
+        var doorClosed = this.getProperty('doorClosed');
+        if(doorClosed) {
+            doorClosed.getProperty('token').remove();
+        }
+        
+        roomSide.prototype.destroy.call(this);
     };
     
     /* managed tokens - end */
@@ -1371,9 +1383,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             createManagedToken(msg, 'room');
                         }
                         break;
-                    /*case "roomRemove":
-                        roomRemove(msg.selected, msg.who);
-                        break;*/
+                    case 'roomRemove':
+                        if(validateSelections(msg, ['room'])) {
+                            destroyManagedToken(msg);
+                        }
+                        break;
                     case "roomSideAdd":
                         if(chatCommand.length != 4) {
                             help(msg.who, "roomSideAdd");
