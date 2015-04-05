@@ -433,6 +433,33 @@ var APIRoomManagement = APIRoomManagement || (function() {
         this.draw();
     };
     
+    room.prototype.removeSide = function(sideOfRoom, msg) {
+        var room = this;
+        
+        this.load();
+        
+        var side;
+        var sides = this.getProperty('sides');
+        
+        this.initializeCollectionProperty('sides');
+        sides.forEach(function(roomSide) {
+            if(roomSide.getProperty('sideOfRoom') == sideOfRoom) {
+                side = roomSide;
+            } else {
+                room.setProperty('sides', roomSide);
+            }
+        });
+        
+        if(!side) {
+            sendWhisper(msg.who, "The side '" + sideOfRoom + "' cannot be found in the selected room.");
+            return;
+        }
+        
+        side.destroy();
+        
+        this.save();
+    };
+    
     inheritPrototype(adhocWall, managedToken);
     
     adhocWall.prototype.load = function() {
@@ -1099,6 +1126,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         room.addSide(command, msg);
     },
     
+    removeRoomSide = function(sideOfRoom, msg) {
+        var room = getManagedTokenById(msg.selected[0]._id);
+        room.removeSide(sideOfRoom, msg);
+    },
+    
     //creates a dynamic lighting segment from A to B on the parent's page: 
     createLosWall = function(parent, pointA, pointB) {
         var isPositiveSlope = (((pointB.y - pointA.y) === 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) >= 0));
@@ -1388,24 +1420,26 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             destroyManagedToken(msg);
                         }
                         break;
-                    case "roomSideAdd":
+                    case 'roomSideAdd':
                         if(chatCommand.length != 4) {
-                            help(msg.who, "roomSideAdd");
+                            help(msg.who, 'roomSideAdd');
                         } else {
                             if(validateSelections(msg, ['room'])) {
-                                chatCommand = msg.content.replace("!api-room roomSideAdd ", "");
+                                chatCommand = msg.content.replace('!api-room roomSideAdd ', '');
                                 addRoomSide(chatCommand, msg);
                             }
                         }
                         break;
-                    /*case "roomSideRemove":
+                    case 'roomSideRemove':
                         if(chatCommand.length != 3) {
-                            help(msg.who, "roomSideRemove");
+                            help(msg.who, 'roomSideRemove');
                         } else {
-                            chatCommand = msg.content.replace("!api-room roomSideRemove ", "");
-                            roomSideRemove(chatCommand, msg.selected, msg.who);
+                            if(validateSelections(msg, ['room'])) {
+                                chatCommand = msg.content.replace('!api-room roomSideRemove ', '');
+                                removeRoomSide(chatCommand, msg);
+                            }
                         }
-                        break;*/
+                        break;
                     case 'roomDoorImageSet':
                         if(chatCommand.length != 3) {
                             help(msg.who, 'roomDoorImageSet');
