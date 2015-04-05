@@ -797,6 +797,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         height: 1,
                         scale: 0.0000001
                     });
+                    
+                if(state.APIRoomManagement.doorPrivsDefault == 1) {
+                    doorOpenToken.set("controlledby", "all");
+                }
                 
                 doorOpenToken.set('gmnotes', '*roomDoor*%3Cbr%3E*p*' + roomToken.id + '*%3Cbr%3E');
                 doorOpen = new roomDoor(doorOpenToken);
@@ -822,6 +826,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         height: 1,
                         scale: 0.0000001
                     });
+                    
+                if(state.APIRoomManagement.doorPrivsDefault == 1) {
+                    doorClosedToken.set("controlledby", "all");
+                }
                 
                 doorClosedToken.set('gmnotes', '*roomDoor*%3Cbr%3E*p*' + roomToken.id + '*%3Cbr%3E');
                 doorClosed = new roomDoor(doorClosedToken);
@@ -852,7 +860,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         if(activeDoor) {
             var activeDoorToken = activeDoor.getProperty('token');
-            if(activeDoorToken.get('controlledby').match(/^all/) && roomToken.get('layer') != 'gmlayer') {
+            
+            if(activeDoorToken.get('controlledby') && roomToken.get('layer') != 'gmlayer') {
                 activeDoorToken.set('layer', 'objects');
                 toBack(activeDoorToken);
             } else {
@@ -999,11 +1008,21 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 var emptyToken = getObj('graphic', msg.selected[0]._id);
                 token = new adhocDoor(emptyToken);
                 token.setProperty('doorType', 'doorOpen');
+                
+                if(state.APIRoomManagement.doorPrivsDefault == 1) {
+                    token.set("controlledby", "all");
+                }
+                
                 break;
             case 'adhocDoorClosed':
                 var emptyToken = getObj('graphic', msg.selected[0]._id);
                 token = new adhocDoor(emptyToken);
                 token.setProperty('doorType', 'doorClosed');
+                
+                if(state.APIRoomManagement.doorPrivsDefault == 1) {
+                    token.set("controlledby", "all");
+                }
+                
                 break;
             case 'adhocDoorCompanion':
                 //sort out which image is which:
@@ -1017,6 +1036,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         oldDoor = token;
                     }
                 });
+                
+                if(state.APIRoomManagement.doorPrivsDefault == 1) {
+                    newDoor.set("controlledby", "all");
+                }
                 
                 oldDoor.load();
                 
@@ -1276,6 +1299,23 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     },
     
+    //set default for players being able to control doors:
+    setDoorPrivsDefault = function(who, priv) {
+        switch(priv) {
+            case 'gm':
+                state.APIRoomManagement.doorPrivsDefault = 0;
+                sendWhisper(who, "Door privs set to 'gm'.");
+                break;
+            case 'players':
+                state.APIRoomManagement.doorPrivsDefault = 1;
+                sendWhisper(who, "Door privs set to 'players'.");
+                break;
+            default:
+                sendWhisper(who, "Unexpected privledge value of " + priv + ". The expected values are 'gm' or 'players'.");
+                break;
+        }
+    },
+    
     //find imgsrc that is legal for object creation:
     getCleanImgsrc = function (imgsrc) {
         var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max)(.*)$/);
@@ -1432,14 +1472,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             destroyManagedToken(msg);
                         }
                         break;
-                    /*case "doorPrivsDefaultSet":
+                    case 'doorPrivsDefaultSet':
                         if(chatCommand.length != 3) {
-                            help(msg.who, "doorPrivsDefaultSet");
+                            help(msg.who, 'doorPrivsDefaultSet');
                         } else {
                             setDoorPrivsDefault(msg.who, chatCommand[2]);
                         }
                         break;
-                    case "toggleDoorLock":
+                    /*case "toggleDoorLock":
                         toggleDoorLock(msg.selected, msg.who);
                         break;
                     case "toggleDoorTrap":
