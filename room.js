@@ -1464,7 +1464,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //find imgsrc that is legal for object creation:
     getCleanImgsrc = function (imgsrc) {
-        var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max)(.*)$/);
+        var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max|med)(.*)$/);
         
         if(parts) {
           return parts[1] + 'thumb' + parts[3];
