@@ -513,6 +513,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(property) {
             case 'doorType':
             case 'companionDoor':
+            case 'locked':
                 this['_' + property] = value;
                 break;
             default:
@@ -591,6 +592,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     };
     
+    roomDoor.prototype.toggleLock = function() {
+        //TODO
+    };
+    
     inheritPrototype(adhocDoor, door);
     
     adhocDoor.prototype.setProperty = function(property, value) {
@@ -658,6 +663,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
             this.setProperty('positionLeft', token.get('left'));
             this.setProperty('positionTop', token.get('top'));
         }
+        
+        var metaFeature = (token.get('gmnotes').match(/\*f\*([^\*]+)/g));
+        if(metaFeature) {
+            metaFeature = metaFeature[0].substring(3).split('.');
+            this.setProperty('locked', metaFeature[0] == '1');
+        }
     };
     
     adhocDoor.prototype.save = function() {
@@ -688,6 +699,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 + token.get('rotation') + '.' 
                 + token.get('left') + '.' 
                 + token.get('top') 
+                + '*%3Cbr%3E'
+            + '*f*'
+                + (this.getProperty('locked') ? '1' : '')
                 + '*%3Cbr%3E';
         token.set('gmnotes', newGmNotes);
     };
@@ -760,37 +774,65 @@ var APIRoomManagement = APIRoomManagement || (function() {
     adhocDoor.prototype.attemptToggle = function() {
         this.load();
         
-        var companionDoor = this.getProperty('companionDoor');
-        
-        if(!companionDoor) {
-            log('Attempt to toggle adhoc door that has no companion door. Aborting toggle.');
-            this.draw();
-        } else {
-            companionDoor.load();
+        if(this.getProperty('locked')) {
+            var token = this.getProperty('token');
             
-            var companionDoorToken = companionDoor.getProperty('token');
-            var companionDoorDoorType = companionDoor.getProperty('doorType');
-            
-            companionDoorToken.set('width', parseInt(this.getProperty('positionWidth')));
-            companionDoorToken.set('height', parseInt(this.getProperty('positionHeight')));
-            companionDoorToken.set('rotation', parseInt(this.getProperty('positionRotation')));
-            companionDoorToken.set('left', parseInt(this.getProperty('positionLeft')));
-            companionDoorToken.set('top', parseInt(this.getProperty('positionTop')));
-            companionDoorToken.set('layer', this.getProperty('token').get('layer'));
-            
-            companionDoor.save();
-            companionDoor.draw();
+            //put door back into position:
+            token.set('width', parseInt(this.getProperty('positionWidth')));
+            token.set('height', parseInt(this.getProperty('positionHeight')));
+            token.set('rotation', parseInt(this.getProperty('positionRotation')));
+            token.set('left', parseInt(this.getProperty('positionLeft')));
+            token.set('top', parseInt(this.getProperty('positionTop')));
+            token.set('layer', this.getProperty('token').get('layer'));
             
             //visual alert:
             setTimeout(
                 visualAlert(
-                    companionDoorDoorType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
-                    companionDoorToken.get('left'),
-                    companionDoorToken.get('top'),
+                    padlockAlertPic,
+                    token.get('left'),
+                    token.get('top'),
                     1.0,
-                    0), //don't blink
+                    2),
                 5);
+        } else {
+            var companionDoor = this.getProperty('companionDoor');
+            
+            if(!companionDoor) {
+                log('Attempt to toggle adhoc door that has no companion door. Aborting toggle.');
+                this.draw();
+            } else {
+                companionDoor.load();
+                
+                var companionDoorToken = companionDoor.getProperty('token');
+                var companionDoorDoorType = companionDoor.getProperty('doorType');
+                
+                companionDoorToken.set('width', parseInt(this.getProperty('positionWidth')));
+                companionDoorToken.set('height', parseInt(this.getProperty('positionHeight')));
+                companionDoorToken.set('rotation', parseInt(this.getProperty('positionRotation')));
+                companionDoorToken.set('left', parseInt(this.getProperty('positionLeft')));
+                companionDoorToken.set('top', parseInt(this.getProperty('positionTop')));
+                companionDoorToken.set('layer', this.getProperty('token').get('layer'));
+                
+                companionDoor.save();
+                companionDoor.draw();
+                
+                //visual alert:
+                setTimeout(
+                    visualAlert(
+                        companionDoorDoorType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
+                        companionDoorToken.get('left'),
+                        companionDoorToken.get('top'),
+                        1.0,
+                        0), //don't blink
+                    5);
+            }
         }
+    };
+    
+    adhocDoor.prototype.toggleLock = function() {
+        this.load();
+        this.setProperty('locked', !this.getProperty('locked'));
+        this.save();
     };
     
     inheritPrototype(roomSide, typedObject);
@@ -1216,6 +1258,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         room.removeSide(sideOfRoom, msg);
     },
     
+    toggleDoorLock = function(msg) {
+        var door = getManagedTokenById(msg.selected[0]._id);
+        door.toggleLock();
+    },
+    
     //creates a dynamic lighting segment from A to B on the parent's page: 
     createLosWall = function(parent, pointA, pointB) {
         var isPositiveSlope = (((pointB.y - pointA.y) === 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) >= 0));
@@ -1632,10 +1679,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             setDoorPrivsDefault(msg.who, chatCommand[2]);
                         }
                         break;
-                    /*case "toggleDoorLock":
-                        toggleDoorLock(msg.selected, msg.who);
+                    case "toggleDoorLock":
+                        if(validateSelections(msg, ['door'])) {
+                            toggleDoorLock(msg);
+                        }
                         break;
-                    case "toggleDoorTrap":
+                    /*case "toggleDoorTrap":
                         //TODO:
                         sendWhisper(msg.who, "not implemented yet");
                         break;*/
@@ -1880,7 +1929,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return [
                 //TODO: make lock vs. unlock and trap vs. untrap intelligent based on door state:
                 ['lock','toggleDoorLock'],
-                ['trap','toggleDoorTrap']
+                //['trap','toggleDoorTrap']
             ];
     },
     
@@ -1889,7 +1938,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['remove','adhocDoorRemove']])
-                //+commandLinks('Features',intuitDoorFeatures(door))
+                +commandLinks('Features',intuitDoorFeatures(door))
                 +commandLinks('Move Mode (affects all adhoc doors)',[
                         ['on','adhocDoorMove on'],
                         ['off','adhocDoorMove off']
@@ -1926,14 +1975,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
     intuit = function(msg) {
         if(!msg.selected) {
             //nothing is selected, so nothing practical can be accomplished (except maybe settings, which is silly to intuit); assume that help documentation is the best course of action:
-            help(msg.who, "");
+            help(msg.who, '');
         } else if(msg.selected.length == 1) {
-            var graphic = getObj("graphic", msg.selected[0]._id);
+            var graphic = getObj('graphic', msg.selected[0]._id);
             if(!graphic) {
                 //there is only intuitive functionality for graphics being selected:
-                help(msg.who, "");
+                help(msg.who, '');
             } else {
-                var gmNotes = graphic.get("gmnotes");
+                var gmNotes = graphic.get('gmnotes');
                 if(!gmNotes) {
                     intuitEmptyImage(msg);
                 } else if(gmNotes.match(/^\*room\*/)) {
@@ -1943,31 +1992,31 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 } else if(gmNotes.match(/^\*adhocWall\*/)) {
                     intuitAdhocWall(msg);
                 } else {
-                    sendWhisper(msg.who, "No actions are known for the selected image.");
+                    sendWhisper(msg.who, 'No actions are known for the selected image.');
                 }
             }
         } else if(msg.selected.length == 2) {
-            var graphic1 = getObj("graphic", msg.selected[0]._id);
-            var graphic2 = getObj("graphic", msg.selected[1]._id);
+            var graphic1 = getObj('graphic', msg.selected[0]._id);
+            var graphic2 = getObj('graphic', msg.selected[1]._id);
             
             if(!graphic1 || !graphic2) {
-                sendWhisper(msg.who, "Only images should be selected.");
+                sendWhisper(msg.who, 'Only images should be selected.');
             } else {
-                var gmNotes1 = graphic1.get("gmnotes");
-                var gmNotes2 = graphic2.get("gmnotes");
+                var gmNotes1 = graphic1.get('gmnotes');
+                var gmNotes2 = graphic2.get('gmnotes');
                 
                 if(gmNotes1 && gmNotes2) {
-                    sendWhisper(msg.who, "No actions are known for cases where neither selected image is empty.");
+                    sendWhisper(msg.who, 'No actions are known for cases where neither selected image is empty.');
                 } else if(!(gmNotes1 || gmNotes2)) {
-                    sendWhisper(msg.who, "No actions are known for cases where two empty images are selected.");
+                    sendWhisper(msg.who, 'No actions are known for cases where two empty images are selected.');
                 } else if(!((gmNotes1 + gmNotes2).match(/^\*adhocDoor\*/))) {
-                    sendWhisper(msg.who, "No actions are known for cases where one selected image is empty and the other is not an adhoc door.");
+                    sendWhisper(msg.who, 'No actions are known for cases where one selected image is empty and the other is not an adhoc door.');
                 } else {
                     intuitAdhocDoorAndEmpty(msg);
                 }
             }
         } else {
-            sendWhisper(msg.who, "Too many objects are selected.");
+            sendWhisper(msg.who, 'Too many objects are selected.');
         }
     },
     
