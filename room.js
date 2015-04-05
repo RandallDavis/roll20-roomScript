@@ -1210,7 +1210,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 token.setProperty('doorType', 'doorOpen');
                 
                 if(state.APIRoomManagement.doorPrivsDefault == 1) {
-                    token.getProperty('token').set("controlledby", "all");
+                    token.getProperty('token').set('controlledby', 'all');
                 }
                 
                 break;
@@ -1220,7 +1220,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 token.setProperty('doorType', 'doorClosed');
                 
                 if(state.APIRoomManagement.doorPrivsDefault == 1) {
-                    token.getProperty('token').set("controlledby", "all");
+                    token.getProperty('token').set('controlledby', 'all');
                 }
                 
                 break;
@@ -1238,7 +1238,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 });
                 
                 if(state.APIRoomManagement.doorPrivsDefault == 1) {
-                    newDoor.set("controlledby", "all");
+                    newDoor.set('controlledby', 'all');
                 }
                 
                 oldDoor.load();
@@ -1924,34 +1924,41 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     //helper function for intuitive commands for a room's side:
-    intuitRoomSide = function(sideMetas, side) {
-        if(sideMetas) {
-            for(var i = 0;i < sideMetas.length;i++) {
-                if (sideMetas[i].substring(1, 2) == side) {
-                    return [['remove','roomSideRemove ' + side]];
-                }
+    intuitRoomSide = function(sides, sideOfRoom) {
+        var sideText;
+        sides.forEach(function(side) {
+            if(side.getProperty('sideOfRoom') === sideOfRoom) {
+                log('got here');
+                sideText = [['remove','roomSideRemove ' + sideOfRoom]];
             }
+        });
+        
+        if(sideText) {
+            return sideText;
         }
         
         return [
-                ['add wall','roomSideAdd ' + side + ' wall'],
-                ['add open door','roomSideAdd ' + side + ' doorOpen'],
-                ['add closed door','roomSideAdd ' + side + ' doorClosed'],
-                ['add empty side','roomSideAdd ' + side + ' empty']
+                ['add wall','roomSideAdd ' + sideOfRoom + ' wall'],
+                ['add open door','roomSideAdd ' + sideOfRoom + ' doorOpen'],
+                ['add closed door','roomSideAdd ' + sideOfRoom + ' doorClosed'],
+                ['add empty side','roomSideAdd ' + sideOfRoom + ' empty']
             ];
     },
     
     //intuitive command interface for handling a room:
     intuitRoom = function(msg, room) {
-        var sideMetas = room.get("gmnotes").match(/\*\S\*([^\*]+)/g);
+        room.load();
+        var sides = room.getProperty('sides');
+        
+        log(intuitRoomSide(sides, 'l'));
         
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Room',[['remove','roomRemove']])
-                +commandLinks('Left Side',intuitRoomSide(sideMetas, 'l'))
-                +commandLinks('Top Side',intuitRoomSide(sideMetas, 't'))
-                +commandLinks('Right Side',intuitRoomSide(sideMetas, 'r'))
-                +commandLinks('Bottom Side',intuitRoomSide(sideMetas, 'b'))
+                +commandLinks('Left Side',intuitRoomSide(sides, 'l'))
+                +commandLinks('Top Side',intuitRoomSide(sides, 't'))
+                +commandLinks('Right Side',intuitRoomSide(sides, 'r'))
+                +commandLinks('Bottom Side',intuitRoomSide(sides, 'b'))
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
@@ -2034,7 +2041,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 if(!managedToken) {
                     intuitEmptyImage(msg);
                 } else if(managedToken.isType('room')) {
-                    intuitRoom(msg, token); //TODO: pass in managedToken
+                    intuitRoom(msg, managedToken);
                 } else if(managedToken.isType('roomDoor')) {
                     intuitRoomDoor(msg, managedToken);
                 } else if(managedToken.isType('adhocDoor')) {
@@ -2052,14 +2059,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
             if(!graphic1 || !graphic2) {
                 sendWhisper(msg.who, 'Only images should be selected.');
             } else {
-                var gmNotes1 = graphic1.get('gmnotes');
-                var gmNotes2 = graphic2.get('gmnotes');
+                var managedToken1 = getManagedToken(graphic1);
+                var managedToken2 = getManagedToken(graphic2);
                 
-                if(gmNotes1 && gmNotes2) {
+                if(managedToken1 && managedToken2) {
                     sendWhisper(msg.who, 'No actions are known for cases where neither selected image is empty.');
-                } else if(!(gmNotes1 || gmNotes2)) {
+                } else if(!(managedToken1 || managedToken2)) {
                     sendWhisper(msg.who, 'No actions are known for cases where two empty images are selected.');
-                } else if(!((gmNotes1 + gmNotes2).match(/^\*adhocDoor\*/))) {
+                } else if(!((managedToken1 && managedToken1.isType('adhocDoor')) || (managedToken2 && managedToken2.isType('adhocDoor')))) {
                     sendWhisper(msg.who, 'No actions are known for cases where one selected image is empty and the other is not an adhoc door.');
                 } else {
                     intuitAdhocDoorAndEmpty(msg);
