@@ -798,6 +798,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         scale: 0.0000001
                     });
                 
+                doorOpenToken.set('gmnotes', '*roomDoor*%3Cbr%3E*p*' + roomToken.id + '*%3Cbr%3E');
                 doorOpen = new roomDoor(doorOpenToken);
                 doorOpen.setProperty('doorType', 'doorOpen');
                 this.setProperty('doorOpen', doorOpen);
@@ -822,6 +823,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         scale: 0.0000001
                     });
                 
+                doorClosedToken.set('gmnotes', '*roomDoor*%3Cbr%3E*p*' + roomToken.id + '*%3Cbr%3E');
                 doorClosed = new roomDoor(doorClosedToken);
                 doorClosed.setProperty('doorType', 'doorClosed');
                 this.setProperty('doorClosed', doorClosed);
@@ -854,7 +856,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 activeDoorToken.set('layer', 'objects');
                 toBack(activeDoorToken);
             } else {
-                activeDoorToken.set('layer', 'gmlayer');
+                activeDoorToken.set('layer', 'map');
                 toFront(activeDoorToken);
             }
             activeDoorToken.set("height", 26);
@@ -909,6 +911,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case 'room':
                 return new room(token);
                 break;
+            case 'doorOpen': //for backwards compatibility
+            case 'doorClosed': //for backwards compatibility
             case 'roomDoor':
                 return new roomDoor(token);
                 break;
@@ -1476,6 +1480,4 @@ on('ready', function() {
     
     APIRoomManagement.checkInstall();
     APIRoomManagement.registerEventHandlers();
-    
-    log(state.APIRoomManagement);
 });
