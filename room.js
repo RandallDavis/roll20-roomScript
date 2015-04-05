@@ -1134,7 +1134,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 token.setProperty('doorType', 'doorOpen');
                 
                 if(state.APIRoomManagement.doorPrivsDefault == 1) {
-                    token.set("controlledby", "all");
+                    token.getProperty('token').set("controlledby", "all");
                 }
                 
                 break;
@@ -1144,7 +1144,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 token.setProperty('doorType', 'doorClosed');
                 
                 if(state.APIRoomManagement.doorPrivsDefault == 1) {
-                    token.set("controlledby", "all");
+                    token.getProperty('token').set("controlledby", "all");
                 }
                 
                 break;
@@ -1264,7 +1264,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             },
             topMid : {
                 x : 0,
-    			y : 0
+        		y : 0
     		},
     		topRight : {
     			x : 0,
