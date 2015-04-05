@@ -1501,7 +1501,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(msg.type == 'api' && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
             var chatCommand = msg.content.split(' ');
             if(chatCommand.length == 1) {
-                //intuit(msg);
+                intuit(msg);
             } else {
                 switch(chatCommand[1]) {
                     case 'help':
@@ -1647,6 +1647,329 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     /* text command handling - end */
+    
+    
+    /* interactive interface - begin */
+    
+    //character converter, credits to Aaron from https://github.com/shdwjk/Roll20API/blob/master/APIHeartBeat/APIHeartBeat.js
+    ch = function(c) {
+        var entities = {
+            '<' : 'lt',
+            '>' : 'gt',
+            "'" : '#39',
+            '@' : '#64',
+            '{' : '#123',
+            '|' : '#124',
+            '}' : '#125',
+            '[' : '#91',
+            ']' : '#93',
+            '"' : 'quot',
+            '-' : 'mdash',
+            ' ' : 'nbsp'
+        };
+
+        if(_.has(entities,c) ){
+            return ('&'+entities[c]+';');
+        }
+        return '';
+    },
+    
+    //help builder:
+    displayHelp = function(who, header, body, nextSteps) {
+        var text =
+            '<div style="border: 1px solid black;background-color: #B266FF;">'
+                +'<div style="border: 1px solid black;font-weight: bold;border-bottom: 1px solid black;background-color: #6666FF;font-size: 115%;">'
+                    +'<div style="padding-left:3px;margin-top:3px;margin-bottom:3px;">'
+                        +header
+                    +'</div>'
+            	+'</div>'
+                +'<div style="border: 1px solid black;background-color: #B266FF;padding: 3px 3px;">'
+                	+body;
+                    
+        if(nextSteps) {
+            text = text
+                +'<div style="padding-left:10px;margin-top:3px;margin-bottom:3px;">'
+                    +'<div style="border-top: 1px solid #6666FF;margin-top:10px;border-bottom: 1px solid #6666FF;">'
+                        +'<div style="margin-top:10px;"></div>'
+                        +nextSteps
+                    +'</div>'
+                +'</div>';
+        }
+        
+        text = text
+                +'</div>'
+            +'</div>';
+        
+        sendWhisper(who, text);
+    },
+    
+    //constructs a clickable link to a help topic:
+    helpLink = function(topic) {
+        return '[' + topic + '](!api-room help ' + topic + ') ';
+    },
+    
+    //constructs clickable links to help topics:
+    helpLinks = function(header, topics) {
+        var html = '<p><b>' + header + '</b><br/>';
+        
+        for(var i = 0;i<topics.length;i++) {
+            html += helpLink(topics[i]);
+        }
+        
+        return html + '</p>';
+    },
+    
+    //constructs a clickable command:
+    commandLink = function(text, command) {
+        return '[' + text + '](!api-room ' + command + ') ';
+    },
+    
+    //constructs clickable commands:
+    commandLinks = function(header, commands) {
+        var html = '<p><b>' + header + '</b><br/>';
+        
+        for(var i = 0;i<commands.length;i++) {
+            html += commandLink(commands[i][0], commands[i][1]);
+        }
+        
+        return html + '</p>';
+    },
+    
+    //general help:
+    help = function(who, topic) {
+        switch(topic) {
+            case "room":
+            case "rooms":
+                displayHelp(who, 'Room API - Rooms',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Rooms are images that are managed by the API.</p>'
+                        +'<p>A room has four '+ch("'")+'sides'+ch("'")+': top, bottom, left, and right.</p>'
+                        +'<p>Each side can be of the following types:'
+                            +'<ul>'
+                                +'<li><b>wall</b> - which blocks LoS</li>'
+                                +'<li><b>empty</b> - which doesn'+ch("'")+'t block LoS</li>'
+                                +'<li><b>closed door</b> - which blocks LoS and has a closed door image</li>'
+                                +'<li><b>open door</b> - which blocks LoS except where the door is and has an open door image</li>'
+                            +'</ul>'
+                        +'</p>'
+                        +'<p>Rooms can be moved, rotated, and resized. The API will make sure that everything is drawn properly.</p>'
+                        +'<p>Doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
+                        +'<p>To create a room, select an empty image and run <b>!api-room</b>.'
+                        +'<p>As soon as the image becomes a room, it is pushed to the Maps layer as a convenience and is from then on managed by the API. The room can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
+                        +'<p>Doors on rooms are drawn to whatever door images are set up. To set a door image, select an empty image with the image you want for your door and run <b>!api-room</b>. This needs to be set up for both open and closed doors.</p>'
+                   +'</div>',
+                     
+                    helpLinks('Sub-topics',['door privledges'])
+                );
+                break;
+            case "door privledges":
+                displayHelp(who, 'Room API - Door Privledges',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>This sets the default for who should be able to toggle doors. Setting it to '+ch("'")+'players'+ch("'")+' makes it that anybody can toggle doors. Setting it to '+ch("'")+'gm'+ch("'")+' makes it that only GMs can toggle them.</p>'
+                        +'<p>This can be overridden on individual doors (such as a door that is locked) by double clicking the door and changing the '+ch("'")+'Controlled By'+ch("'")+' settings.</p>'
+                        +commandLink('set it to gm','doorPrivsDefaultSet gm')
+                        +commandLink('set it to players','doorPrivsDefaultSet players')
+                    +'</div>'
+                );
+                break;
+            case "adhoc":
+            case "adhocs":
+            case "adhoc walls and doors":
+                displayHelp(who, 'Room API - Adhoc',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Adhoc walls and doors are individually placed objects that are not tied to a room.</p>'
+                        +'<p>Adhoc walls and adhoc doors are used for complex situations where a wall shouldn'+ch("'")+'t simply attach to a room'+ch("'")+'s side, a single centered door isn'+ch("'")+'t enough, or alternate door images or door shapes are needed. To use adhoc walls and adhoc doors on room sides, leave the room side empty, and place adhoc items where necessary.</p>'
+                    +'</div>',
+                    
+                    helpLinks('Sub-topics',['adhoc walls','adhoc doors'])
+                );
+                break;
+            case "adhoc walls":
+                displayHelp(who, 'Room API - Adhoc Walls',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>To add an adhoc wall, select an empty image and run <b>!api-room</b>.</p>'
+                        +'<p>As soon as the image becomes an adhoc wall, it is pushed to the Maps layer as a convenience and is from then on managed by the API. It can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
+                        +'<p>A LoS wall will be drawn through the length of the wall.</p>'
+                    +'</div>'
+                );
+                break;
+            case "adhoc doors":
+                displayHelp(who, 'Room API - Adhoc Doors',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Adhoc doors are created in two steps. First, select an empty image and run <b>!api-room</b>. Second, select the first image along with another empty image and run <b>!api-room</b>.</p>'
+                        +'<p>A LoS wall will be drawn through the door when it is closed.</p>'
+                        +'<p>Adhoc doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
+                        +'<p>When <b>'+ch("'")+'Move Mode'+ch("'")+'</b> is on, interacting with adhoc doors does not toggle them. This is used to reposition, rotate, and resize them.</p>'
+                        +commandLink('turn move mode on','adhocDoorMove on')
+                        +commandLink('turn move mode off','adhocDoorMove off')    
+                    +'</div>',
+                     
+                    helpLinks('Sub-topics',['door privledges'])
+                );
+                break;
+            default:
+                displayHelp(who, 'Room API v'+version,
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                    	+'<p>This is an API for managing rooms, so that you can piece maps together out of various rooms without having to worry about dynamic lighting or doors - the goal of the API is that those things are handled for you in a natural and powerful way.</p>'
+                        +'<p>The Room API is used with an intuitive interface. Just type <b>!api-room</b>, and action buttons will appear in the chat window. If nothing is selected, this help document will appear. Things get even easier if you set up a macro for the <b>!api-room</b> command.</p>'
+                    +'</div>',
+                    
+                    helpLinks('Sub-topics',['rooms','adhoc walls and doors'])
+                );
+        }
+    },
+    
+    //intuitive command interface for handling an empty image:
+    intuitEmptyImage = function(msg) {
+        displayHelp(msg.who, 'Empty Image Actions',
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Actions',[
+                        ['create room','roomAdd'],
+                        ['create adhoc wall','adhocWallAdd'],
+                        ['create adhoc closed door','adhocDoorAdd closed'],
+                        ['create adhoc open door','adhocDoorAdd open']
+                    ])
+                +commandLinks('Settings',[
+                        ['set open door default image','roomDoorImageSet open'],
+                        ['set closed door default image','roomDoorImageSet closed']
+                    ])
+                +commandLinks('Help',[['help','help']])
+            +'</div>'
+        );
+    },
+    
+    //helper function for intuitive commands for a room's side:
+    intuitRoomSide = function(sideMetas, side) {
+        if(sideMetas) {
+            for(var i = 0;i < sideMetas.length;i++) {
+                if (sideMetas[i].substring(1, 2) == side) {
+                    return [['remove','roomSideRemove ' + side]];
+                }
+            }
+        }
+        
+        return [
+                ['add wall','roomSideAdd ' + side + ' wall'],
+                ['add open door','roomSideAdd ' + side + ' doorOpen'],
+                ['add closed door','roomSideAdd ' + side + ' doorClosed'],
+                ['add empty side','roomSideAdd ' + side + ' empty']
+            ];
+    },
+    
+    //intuitive command interface for handling a room:
+    intuitRoom = function(msg, room) {
+        var sideMetas = room.get("gmnotes").match(/\*\S\*([^\*]+)/g);
+        
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Room',[['remove','roomRemove']])
+                +commandLinks('Left Side',intuitRoomSide(sideMetas, 'l'))
+                +commandLinks('Top Side',intuitRoomSide(sideMetas, 't'))
+                +commandLinks('Right Side',intuitRoomSide(sideMetas, 'r'))
+                +commandLinks('Bottom Side',intuitRoomSide(sideMetas, 'b'))
+                +commandLinks('Help',[['help','help']])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Room Actions', body);
+    },
+    
+    //helper function for intuiting features of an adhoc or room door:
+    intuitDoorFeatures = function(door) {
+        return [
+                //TODO: make lock vs. unlock and trap vs. untrap intelligent based on door state:
+                ['lock','toggleDoorLock'],
+                ['trap','toggleDoorTrap']
+            ];
+    },
+    
+    //intuitive command interface for handling an adhoc door:
+    intuitAdhocDoor = function(msg, door) {
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Adhoc Door',[['remove','adhocDoorRemove']])
+                //+commandLinks('Features',intuitDoorFeatures(door))
+                +commandLinks('Move Mode (affects all adhoc doors)',[
+                        ['on','adhocDoorMove on'],
+                        ['off','adhocDoorMove off']
+                    ])
+                +commandLinks('Help',[['help','help']])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Adhoc Door Actions', body);
+    },
+    
+    //intuitive command interface for handling an adhoc wall:
+    intuitAdhocWall = function(msg) {
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Adhoc Wall',[['remove','adhocWallRemove']])
+                +commandLinks('Help',[['help','help']])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Adhoc Wall Actions', body);
+    },
+    
+    //intuitive command interface for handling an adhoc door and an empty image:
+    intuitAdhocDoorAndEmpty = function(msg) {
+        var body = 
+            '<div style="padding-left:10px;margin-bottom:3px;">'
+                +commandLinks('Adhoc Door',[['complete set','adhocDoorAdd']])
+                +commandLinks('Help',[['help','help']])
+            +'</div>';
+        
+        displayHelp(msg.who, 'Adhoc Door Actions', body);
+    },
+    
+    //intuitive command interface that presents wizard-like options based on context:
+    intuit = function(msg) {
+        if(!msg.selected) {
+            //nothing is selected, so nothing practical can be accomplished (except maybe settings, which is silly to intuit); assume that help documentation is the best course of action:
+            help(msg.who, "");
+        } else if(msg.selected.length == 1) {
+            var graphic = getObj("graphic", msg.selected[0]._id);
+            if(!graphic) {
+                //there is only intuitive functionality for graphics being selected:
+                help(msg.who, "");
+            } else {
+                var gmNotes = graphic.get("gmnotes");
+                if(!gmNotes) {
+                    intuitEmptyImage(msg);
+                } else if(gmNotes.match(/^\*room\*/)) {
+                    intuitRoom(msg, graphic);
+                } else if(gmNotes.match(/^\*adhocDoor\*/)) {
+                    intuitAdhocDoor(msg, graphic);
+                } else if(gmNotes.match(/^\*adhocWall\*/)) {
+                    intuitAdhocWall(msg);
+                } else {
+                    sendWhisper(msg.who, "No actions are known for the selected image.");
+                }
+            }
+        } else if(msg.selected.length == 2) {
+            var graphic1 = getObj("graphic", msg.selected[0]._id);
+            var graphic2 = getObj("graphic", msg.selected[1]._id);
+            
+            if(!graphic1 || !graphic2) {
+                sendWhisper(msg.who, "Only images should be selected.");
+            } else {
+                var gmNotes1 = graphic1.get("gmnotes");
+                var gmNotes2 = graphic2.get("gmnotes");
+                
+                if(gmNotes1 && gmNotes2) {
+                    sendWhisper(msg.who, "No actions are known for cases where neither selected image is empty.");
+                } else if(!(gmNotes1 || gmNotes2)) {
+                    sendWhisper(msg.who, "No actions are known for cases where two empty images are selected.");
+                } else if(!((gmNotes1 + gmNotes2).match(/^\*adhocDoor\*/))) {
+                    sendWhisper(msg.who, "No actions are known for cases where one selected image is empty and the other is not an adhoc door.");
+                } else {
+                    intuitAdhocDoorAndEmpty(msg);
+                }
+            }
+        } else {
+            sendWhisper(msg.who, "Too many objects are selected.");
+        }
+    },
+    
+    /* interactive interface - end */
     
     
     /* nuts and bolts - begin */
