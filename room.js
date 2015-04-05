@@ -248,11 +248,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 
                 side.initializeCollectionProperty('wallIds');
                 switch(metaSide[0]) {
-                    case 'doorOpen':
-                        side.setProperty('wallIds', metaSide[metaSide.length - 2]);
-                    case 'doorClosed':
                     case 'wall':
                         side.setProperty('wallIds', metaSide[metaSide.length - 1]);
+                        break;
+                    case 'doorOpen':
+                    case 'doorClosed':
+                        for(var i = 3;i < metaSide.length;i++) {
+                            side.setProperty('wallIds', metaSide[i]);
+                        }
                         break;
                     default:
                         break;
@@ -295,13 +298,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     newGmNotes = newGmNotes + '.';
                 }
                 
-                newGmNotes = newGmNotes
-                    + '.' + side.getProperty('wallIds')[0][1];
-                
-                if(side.getProperty('sideType') == 'doorOpen') {
+                side.getProperty('wallIds').forEach(function(wallId) {
                     newGmNotes = newGmNotes
-                        + '.' + side.getProperty('wallIds')[1][1];
-                }
+                        + '.' + wallId[1];
+                });
             }
             
             newGmNotes = newGmNotes
@@ -525,6 +525,64 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     inheritPrototype(roomDoor, door);
     
+    roomDoor.prototype.setProperty = function(property, value) {
+        switch(property) {
+            case 'room':
+                this['_' + property] = value;
+                break;
+            default:
+                door.prototype.setProperty.call(this, property, value);
+                break;
+        }
+    };
+    
+    roomDoor.prototype.load = function() {
+        var metaRoom = this.getProperty('token').get('gmnotes').match(/\*p\*([^\*]+)/g);
+        if(metaRoom) {
+            metaRoom = metaRoom[0].substring(3);
+        }
+        var room = getManagedTokenById(metaRoom);
+        this.setProperty('room', room);
+    };
+    
+    roomDoor.prototype.attemptToggle = function() {
+        this.load();
+        var token = this.getProperty('token');
+        
+        //find the roomSide that the door is on:
+        var side;
+        var room = this.getProperty('room');
+        room.load();
+        room.getProperty('sides').forEach(function(roomSide) {
+            if(roomSide.isType('roomSideDoor')) {
+                var doorOpen = roomSide.getProperty('doorOpen');
+                var doorClosed = roomSide.getProperty('doorClosed');
+                
+                if((doorOpen && doorOpen.getProperty('token').id == token.id)
+                        || (doorClosed && doorClosed.getProperty('token').id == token.id)) {
+                    side = roomSide;
+                }
+            }
+        });
+        
+        if(!side) {
+            log('No room side could be found containing this door.');
+            return;
+        }
+        
+        //toggle doors:
+        if(side.getProperty('sideType') == 'doorClosed') {
+            side.setProperty('sideType', 'doorOpen');
+        } else {
+            side.setProperty('sideType', 'doorClosed');
+        }
+        
+        room.save();
+        room.draw();
+        
+        //TODO: visual alert
+    };
+    
     inheritPrototype(adhocDoor, door);
     
     adhocDoor.prototype.setProperty = function(property, value) {
@@ -679,6 +737,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     adhocDoor.prototype.attemptToggle = function() {
         if(state.APIRoomManagement.adhocDoorMoveMode == 1) {
+            //TODO: set position meta
             this.draw();
         } else {
             this.load();
@@ -1367,7 +1426,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(parts) {
           return parts[1] + 'thumb' + parts[3];
         }
-        return;
+        return null;
     },
     
     handleTokenChange = function(graphic) {
