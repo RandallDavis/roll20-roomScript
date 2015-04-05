@@ -588,7 +588,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             
             //visual alert:
             setTimeout(
-                visualAlert(
+                APIVisualAlert.visualAlert(
                     padlockAlertPic,
                     token.get('left'),
                     token.get('top'),
@@ -629,7 +629,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             
                 //visual alert:
                 setTimeout(
-                    visualAlert(
+                    APIVisualAlert.visualAlert(
                         newSideType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
                         newActiveDoorToken.get('left'),
                         newActiveDoorToken.get('top'),
@@ -831,7 +831,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             
             //visual alert:
             setTimeout(
-                visualAlert(
+                APIVisualAlert.visualAlert(
                     padlockAlertPic,
                     token.get('left'),
                     token.get('top'),
@@ -862,7 +862,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 
                 //visual alert:
                 setTimeout(
-                    visualAlert(
+                    APIVisualAlert.visualAlert(
                         companionDoorDoorType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
                         companionDoorToken.get('left'),
                         companionDoorToken.get('top'),
@@ -2104,7 +2104,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
 on('ready', function() {
     'use strict';
     
-    if('undefined' !== typeof(APIVisualAlert) && APIVisualAlert.visualAlert && _.isFunction(visualAlert)) {
+    if('undefined' !== typeof(APIVisualAlert) && APIVisualAlert.visualAlert && _.isFunction(APIVisualAlert.visualAlert)) {
         APIRoomManagement.checkInstall();
         APIRoomManagement.registerEventHandlers();
     } else {
