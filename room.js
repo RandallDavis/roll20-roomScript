@@ -4,11 +4,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     var version = 3.0,
         schemaVersion = 0.3,
-        
-        //TODO: rename these to 'alert pics':
-        closedDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
-        openDoorPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
-        padlockPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
+        closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
+        openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
+        padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
         
     checkInstall = function() {
         
@@ -570,17 +568,27 @@ var APIRoomManagement = APIRoomManagement || (function() {
             return;
         }
         
-        //toggle doors:
-        if(side.getProperty('sideType') == 'doorClosed') {
-            side.setProperty('sideType', 'doorOpen');
-        } else {
-            side.setProperty('sideType', 'doorClosed');
-        }
+        var newSideType = side.getProperty('sideType') == 'doorClosed' ? 'doorOpen' : 'doorClosed';
+        var newActiveDoor = side.getProperty(newSideType);
+        side.setProperty('sideType', newSideType);
         
         room.save();
         room.draw();
         
-        //TODO: visual alert
+        var newActiveDoorToken;
+        if(newActiveDoor) {
+            newActiveDoorToken = newActiveDoor.getProperty('token');
+        
+            //visual alert:
+            setTimeout(
+                visualAlert(
+                    newSideType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
+                    newActiveDoorToken.get('left'),
+                    newActiveDoorToken.get('top'),
+                    1.0,
+                    0), //don't blink
+                5);
+        }
     };
     
     inheritPrototype(adhocDoor, door);
@@ -761,6 +769,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             companionDoor.load();
             
             var companionDoorToken = companionDoor.getProperty('token');
+            var companionDoorDoorType = companionDoor.getProperty('doorType');
             
             companionDoorToken.set('width', parseInt(this.getProperty('positionWidth')));
             companionDoorToken.set('height', parseInt(this.getProperty('positionHeight')));
@@ -772,7 +781,15 @@ var APIRoomManagement = APIRoomManagement || (function() {
             companionDoor.save();
             companionDoor.draw();
             
-            //TODO: visual alert
+            //visual alert:
+            setTimeout(
+                visualAlert(
+                    companionDoorDoorType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
+                    companionDoorToken.get('left'),
+                    companionDoorToken.get('top'),
+                    1.0,
+                    0), //don't blink
+                5);
         }
     };
     
@@ -1487,16 +1504,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 //intuit(msg);
             } else {
                 switch(chatCommand[1]) {
-                    /*case "help":
+                    case 'help':
                         if(chatCommand.length <= 2) {
-                            help(msg.who, "");
+                            help(msg.who, '');
                         } else {
                             var helpText = chatCommand;
                             helpText.shift();
                             helpText.shift();
-                            help(msg.who, helpText.join(" "));
+                            help(msg.who, helpText.join(' '));
                         }
-                        break;*/
+                        break;
                     case 'roomAdd':
                         if(validateSelections(msg, ['empty'])) {
                             createManagedToken(msg, 'room');
@@ -1649,10 +1666,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
 })();
 
-//run the script:
 on('ready', function() {
     'use strict';
     
-    APIRoomManagement.checkInstall();
-    APIRoomManagement.registerEventHandlers();
+    if('undefined' !== typeof(APIVisualAlert) && APIVisualAlert.visualAlert && _.isFunction(visualAlert)) {
+        APIRoomManagement.checkInstall();
+        APIRoomManagement.registerEventHandlers();
+    } else {
+        log('--------------------------------------------------------------');
+        log('APIRoomManagement requires the VisualAlert script to work.');
+        log('VisualAlert GIST: https://github.com/RandallDavis/roll20-visualAlertScript');
+        log('--------------------------------------------------------------');
+    }
 });
