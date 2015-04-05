@@ -1927,14 +1927,15 @@ var APIRoomManagement = APIRoomManagement || (function() {
     //helper function for intuiting features of an adhoc or room door:
     intuitDoorFeatures = function(door) {
         return [
-                //TODO: make lock vs. unlock and trap vs. untrap intelligent based on door state:
-                ['lock','toggleDoorLock'],
+                [(door.getProperty('locked') ? 'unlock' : 'lock'),'toggleDoorLock'],
                 //['trap','toggleDoorTrap']
             ];
     },
     
     //intuitive command interface for handling an adhoc door:
     intuitAdhocDoor = function(msg, door) {
+        door.load();
+        
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['remove','adhocDoorRemove']])
@@ -1977,19 +1978,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
             //nothing is selected, so nothing practical can be accomplished (except maybe settings, which is silly to intuit); assume that help documentation is the best course of action:
             help(msg.who, '');
         } else if(msg.selected.length == 1) {
-            var graphic = getObj('graphic', msg.selected[0]._id);
-            if(!graphic) {
+            var token = getObj('graphic', msg.selected[0]._id);
+            if(!token) {
                 //there is only intuitive functionality for graphics being selected:
                 help(msg.who, '');
             } else {
-                var gmNotes = graphic.get('gmnotes');
-                if(!gmNotes) {
+                var managedToken = getManagedToken(token);
+                if(!managedToken) {
                     intuitEmptyImage(msg);
-                } else if(gmNotes.match(/^\*room\*/)) {
-                    intuitRoom(msg, graphic);
-                } else if(gmNotes.match(/^\*adhocDoor\*/)) {
-                    intuitAdhocDoor(msg, graphic);
-                } else if(gmNotes.match(/^\*adhocWall\*/)) {
+                } else if(managedToken.isType('room')) {
+                    intuitRoom(msg, token); //TODO: pass in managedToken
+                } else if(managedToken.isType('adhocDoor')) {
+                    intuitAdhocDoor(msg, managedToken);
+                } else if(managedToken.isType('adhocWall')) {
                     intuitAdhocWall(msg);
                 } else {
                     sendWhisper(msg.who, 'No actions are known for the selected image.');
