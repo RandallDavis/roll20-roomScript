@@ -33,14 +33,71 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     typedObject = function() {
         this._type = new Array();
-    },
+    };
+    
+    typedObject.prototype = {
+        constructor: typedObject,
+        
+        isType: function(type) {
+            var found = false;
+           
+            this._type.forEach(function(typeValue) {
+                if(type == typeValue) {
+                    found = true;
+                    return;
+                }
+            });
+           
+           return found;
+        },
+        
+        getProperty: function(property) {
+            if(!property) {
+                throw new Error('No property specified in getProperty().');
+            }
+            
+            if('undefined' === typeof(this['_' + property])) {
+                return null;
+            }
+            
+            return this['_' + property];
+        },
+        
+        setProperty: function(property, value) {
+            if(!property) {
+                throw new Error('No property specified in setProperty().');
+            }
+            
+            if(!value) {
+                throw new Error("No value specified in setProperty().");
+            }
+            
+            switch(property) {
+                default:
+                    throw new Error(property + ' is unknown in setProperty().');
+                    break;
+            }
+        },
+        
+        initializeCollectionProperty: function(property) {
+            if(!property) {
+                throw new Error('No property specified in initializeCollectionProperty().');
+            }
+            
+            switch(property) {
+                default:
+                    throw new Error(property + ' is unknown in initializeCollectionProperty().');
+                    break;
+            }
+        }
+    };
     
     /* core - end */
     
     
     /* managed tokens - begin */
     
-    managedToken = function(token) {
+    var managedToken = function(token) {
         typedObject.call(this);
         this._type.push('managedToken');
         this._token = token;
@@ -89,59 +146,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
     roomSideDoor = function() {
         roomSide.call(this);
         this._type.push('roomSideDoor');
-    };
-    
-    typedObject.prototype = {
-        constructor: typedObject,
-        isType: function(type) {
-            var found = false;
-           
-            this._type.forEach(function(typeValue) {
-                if(type == typeValue) {
-                    found = true;
-                    return;
-                }
-            });
-           
-           return found;
-        },
-        getProperty: function(property) {
-            if(!property) {
-                throw new Error('No property specified in getProperty().');
-            }
-            
-            if('undefined' === typeof(this['_' + property])) {
-                return null;
-            }
-            
-            return this['_' + property];
-        },
-        setProperty: function(property, value) {
-            if(!property) {
-                throw new Error('No property specified in setProperty().');
-            }
-            
-            if(!value) {
-                throw new Error("No value specified in setProperty().");
-            }
-            
-            switch(property) {
-                default:
-                    throw new Error(property + ' is unknown in setProperty().');
-                    break;
-            }
-        },
-        initializeCollectionProperty: function(property) {
-            if(!property) {
-                throw new Error('No property specified in initializeCollectionProperty().');
-            }
-            
-            switch(property) {
-                default:
-                    throw new Error(property + ' is unknown in initializeCollectionProperty().');
-                    break;
-            }
-        }
     };
     
     inheritPrototype(managedToken, typedObject);
