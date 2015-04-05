@@ -1611,6 +1611,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                                     break;
                                 default:
                                     help(msg.who, 'adhocDoorMove');
+                                    break;
                             }
                         } else if(chatCommand.length == 2) {
                             //implied toggling of move mode:
@@ -1816,6 +1817,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     
                     helpLinks('Sub-topics',['rooms','adhoc walls and doors'])
                 );
+                break;
         }
     },
     
