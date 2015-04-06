@@ -2,8 +2,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.0,
-        schemaVersion = 0.3,
+    var version = 3.1,
+        schemaVersion = 0.4,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
@@ -20,7 +20,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 doorOpenPicUrl: '',
                 doorClosedPicUrl: '',
                 adhocDoorMoveMode: 0,
-                doorPrivsDefault: 1 //0 = gm only, 1 = all players
+                doorPrivsDefault: 1, //0 = gm only, 1 = all players
+                uiPreference: 1 //0 = chat, 1 = handout
             };
         }
     },
@@ -1525,7 +1526,23 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 sendWhisper(who, "Door privs set to 'players'.");
                 break;
             default:
-                sendWhisper(who, "Unexpected privledge value of " + priv + ". The expected values are 'gm' or 'players'.");
+                sendWhisper(who, "Unexpected privledge value of '" + priv + "'. The expected values are 'gm' or 'players'.");
+                break;
+        }
+    },
+    
+    setUiPreference = function(who, setting) {
+        switch(setting) {
+            case 'chat':
+                state.APIRoomManagement.uiPreference = 0;
+                sendWhisper(who, 'UI will output to chat window.');
+                break;
+            case 'handout':
+                state.APIRoomManagement.uiPreference = 1;
+                sendWhisper(who, 'UI will output to a handout.');
+                break;
+            default:
+                sendWhisper(who, "Unexpected setting of '" + setting + "'. The expected values are 'chat' or 'handout'.");
                 break;
         }
     },
@@ -1577,6 +1594,32 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     
     /* text command handling - begin */
+    
+    displayUi = function(who, text) {
+        if(state.APIRoomManagement.uiPreference === 0) {
+            sendWhisper(who, text);
+        } else {
+            var handout = findObjs({                              
+                _type: 'handout',
+                name: 'API-RoomManagement'
+            }, {caseInsensitive: true});
+        
+            if(handout && handout.length > 0) {
+                handout = handout[0];
+            } else {
+                handout = createObj('handout', {
+                    name: 'API-RoomManagement',
+                    avatar: 'https://s3.amazonaws.com/files.d20.io/images/7360175/t-Y2NgxamazYSIkbaXQjJg/thumb.jpg?1422294416'
+                });
+            }
+            
+            handout.get("notes", function(notes) {
+                log(notes);
+            });
+            
+            handout.set('notes', text);
+        }
+    },
     
     sendWhisper = function(to, message) {
         sendChat('Room API', '/w ' + to.split(' ')[0] + ' ' + message);  
@@ -1717,6 +1760,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             setDoorPrivsDefault(msg.who, chatCommand[2]);
                         }
                         break;
+                    case 'uiPreference':
+                        if(chatCommand.length != 3) {
+                            help(msg.who, 'uiPreference'); //TODO: implement this
+                        } else {
+                            setUiPreference(msg.who, chatCommand[2]);
+                        }
+                        break;
                     case "toggleDoorLock":
                         if(validateSelections(msg, ['door'])) {
                             toggleDoorLock(msg);
@@ -1788,12 +1838,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +'</div>'
             +'</div>';
         
-        sendWhisper(who, text);
+        displayUi(who, text);
     },
     
     //constructs a clickable link to a help topic:
     helpLink = function(topic) {
-        return '[' + topic + '](!api-room help ' + topic + ') ';
+        if(state.APIRoomManagement.uiPreference === 0) {
+            return '[' + topic + '](!api-room help ' + topic + ') ';
+        } else {
+            return '<a href="!api-room help ' + topic + '"><< ' + topic + ' >></a> ';
+        }
     },
     
     //constructs clickable links to help topics:
@@ -1809,7 +1863,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //constructs a clickable command:
     commandLink = function(text, command) {
-        return '[' + text + '](!api-room ' + command + ') ';
+        if(state.APIRoomManagement.uiPreference === 0) {
+           return '[' + text + '](!api-room ' + command + ') ';
+        } else {
+            return '<a href="!api-room ' + command + '"><< ' + text + ' >></a> ';
+        }
     },
     
     //constructs clickable commands:
@@ -1860,6 +1918,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>'
                 );
                 break;
+            case "ui preference":
+                displayHelp(who, 'Room API - UI Preferences',
+                    '<div style="padding-left:10px;margin-bottom:3px;">'
+                        +'<p>Sets where user interface (UI) commands should be sent.</p>'
+                        +'<p>If this is set to '+ch("'")+'handout'+ch("'")+', it will appear in a handout called '+ch("'")+'API-RoomManagement'+ch("'")+'.</p>'
+                        +commandLink('set it to chat','uiPreference chat')
+                        +commandLink('set it to handout','uiPreference handout')
+                    +'</div>'
+                );
+                break;
             case "adhoc":
             case "adhocs":
             case "adhoc walls and doors":
@@ -1902,7 +1970,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>The Room API is used with an intuitive interface. Just type <b>!api-room</b>, and action buttons will appear in the chat window. If nothing is selected, this help document will appear. Things get even easier if you set up a macro for the <b>!api-room</b> command.</p>'
                     +'</div>',
                     
-                    helpLinks('Sub-topics',['rooms','adhoc walls and doors'])
+                    helpLinks('Sub-topics',['rooms','adhoc walls and doors','ui preference'])
                 );
                 break;
         }
@@ -1932,7 +2000,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var sideText;
         sides.forEach(function(side) {
             if(side.getProperty('sideOfRoom') === sideOfRoom) {
-                log('got here');
                 sideText = [['remove','roomSideRemove ' + sideOfRoom]];
             }
         });
@@ -1953,8 +2020,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
     intuitRoom = function(msg, room) {
         room.load();
         var sides = room.getProperty('sides');
-        
-        log(intuitRoomSide(sides, 'l'));
         
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
