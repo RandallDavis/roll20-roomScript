@@ -1613,10 +1613,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 });
             }
             
-            handout.get("notes", function(notes) {
-                log(notes);
-            });
-            
             handout.set('notes', text);
         }
     },
@@ -1923,6 +1919,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Sets where user interface (UI) commands should be sent.</p>'
                         +'<p>If this is set to '+ch("'")+'handout'+ch("'")+', it will appear in a handout called '+ch("'")+'API-RoomManagement'+ch("'")+'.</p>'
+                        +'<p>Actions in the handout are not functional if the handout is popped out.</p>'
                         +commandLink('set it to chat','uiPreference chat')
                         +commandLink('set it to handout','uiPreference handout')
                     +'</div>'
