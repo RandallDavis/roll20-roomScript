@@ -3,7 +3,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     /* core - begin */
     
     var version = 3.1,
-        schemaVersion = 0.4,
+        schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
@@ -21,7 +21,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 doorClosedPicUrl: '',
                 adhocDoorMoveMode: 0,
                 doorPrivsDefault: 1, //0 = gm only, 1 = all players
-                uiPreference: 1 //0 = chat, 1 = handout
+                uiPreference: 0 //0 = chat, 1 = handout
             };
         }
     },
