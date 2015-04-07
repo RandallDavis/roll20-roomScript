@@ -7,6 +7,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
+        buttonBackgroundColor = '#E92862',
+        mainBackgroundColor = '#B266FF',
+        headerBackgroundColor = '#6666FF',
         
     checkInstall = function() {
         
@@ -1613,6 +1616,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 });
             }
             
+            /*handout.get('notes', function(notes) {
+                log(notes);
+            });*/
+            
             handout.set('notes', text);
         }
     },
@@ -1842,7 +1849,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(state.APIRoomManagement.uiPreference === 0) {
             return '[' + topic + '](!api-room help ' + topic + ') ';
         } else {
-            return '<a href="!api-room help ' + topic + '"><< ' + topic + ' >></a> ';
+            return '<span style="border: 1px solid white;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px"> <a href="!api-room help ' + topic + '">' + topic + '</a> </span> ';
         }
     },
     
@@ -1862,7 +1869,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(state.APIRoomManagement.uiPreference === 0) {
            return '[' + text + '](!api-room ' + command + ') ';
         } else {
-            return '<a href="!api-room ' + command + '"><< ' + text + ' >></a> ';
+            return '<span style="border: 1px solid white;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px"> <a href="!api-room ' + command + '">' + text + '</a> </span> ';
         }
     },
     
