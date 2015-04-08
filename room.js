@@ -2,14 +2,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.1,
+    var version = 3.2,
         schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
         buttonBackgroundColor = '#E92862',
-        mainBackgroundColor = '#B266FF',
-        headerBackgroundColor = '#6666FF',
+        mainBackgroundColor = '#3D8FE1',
+        headerBackgroundColor = '#386EA5',
         
     checkInstall = function() {
         
@@ -1824,19 +1824,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
             
         var text =
-            '<span style="border: 1px solid black;width: 100%;display:inline-block;background-color: #B266FF;padding-right:'+rightPadding+';">'
-                +'<span style="border: 1px solid black;display:inline-block;width: 100%;font-weight: bold;border-bottom: 1px solid black;background-color: #6666FF;font-size: 115%;padding-right:'+rightPadding+';">'
+            '<span style="border: 1px solid black;width: 100%;display:inline-block;background-color:'+mainBackgroundColor+';padding-right:'+rightPadding+';">'
+                +'<span style="border: 1px solid black;display:inline-block;width: 100%;font-weight: bold;border-bottom: 1px solid black;background-color:'+headerBackgroundColor+';font-size: 115%;padding-right:'+rightPadding+';">'
                     +'<span style="padding-left:3px;display:inline-block;width: 100%;margin-top:3px;margin-bottom:3px;">'
                         +header
                     +'</span>'
                 +'</span>'
-                +'<span style="border: 1px solid black;display:inline-block;width: 100%;background-color: #B266FF;padding-right:'+rightPadding+';">'
+                +'<span style="border: 1px solid black;display:inline-block;width: 100%;background-color:'+mainBackgroundColor+';padding-right:'+rightPadding+';">'
                     +body
                     
         if(nextSteps) {
             text = text
                 +'<span style="padding-left:10px;display:inline-block;width: 100%;margin-top:3px;margin-bottom:3px;padding-right:'+rightPadding+';">'
-                    +'<span style="border-top: 1px solid #6666FF;display:inline-block;width: 100%;margin-top:10px;border-bottom: 1px solid #6666FF;">'
+                    +'<span style="border-top: 1px solid '+headerBackgroundColor+';display:inline-block;width: 100%;margin-top:10px;border-bottom: 1px solid '+headerBackgroundColor+';">'
                         +'<div style="margin-top:10px;"></div>'
                         +nextSteps
                     +'</span>'
