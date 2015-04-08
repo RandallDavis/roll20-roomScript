@@ -1855,7 +1855,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(state.APIRoomManagement.uiPreference === 0) {
             return '[' + topic + '](!api-room help ' + topic + ') ';
         } else {
-            return '<span style="border: 1px solid white;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px;"> <a href="!api-room help ' + topic + '">' + topic + '</a> </span> ';
+            return '<span style="border: 1px solid white;display:inline-block;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px;"> <a href="!api-room help ' + topic + '">' + topic + '</a> </span> ';
         }
     },
     
@@ -1875,7 +1875,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(state.APIRoomManagement.uiPreference === 0) {
            return '[' + text + '](!api-room ' + command + ') ';
         } else {
-            return '<span style="border: 1px solid white;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px;"> <a href="!api-room ' + command + '">' + text + '</a> </span> ';
+            return '<span style="border: 1px solid white;display:inline-block;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px;"> <a href="!api-room ' + command + '">' + text + '</a> </span> ';
         }
     },
     
