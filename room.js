@@ -2,14 +2,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.1,
+    var version = 3.2,
         schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
         buttonBackgroundColor = '#E92862',
-        mainBackgroundColor = '#B266FF',
-        headerBackgroundColor = '#6666FF',
+        mainBackgroundColor = '#3D8FE1',
+        headerBackgroundColor = '#386EA5',
         
     checkInstall = function() {
         
@@ -1353,7 +1353,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             },
             topMid : {
                 x : 0,
-        		y : 0
+            	y : 0
     		},
     		topRight : {
     			x : 0,
@@ -1817,29 +1817,35 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //help builder:
     displayHelp = function(who, header, body, nextSteps) {
+        var rightPadding = '0px';
+        
+        if(state.APIRoomManagement.uiPreference === 1) {
+            rightPadding = '14px';
+        }
+            
         var text =
-            '<div style="border: 1px solid black;background-color: #B266FF;">'
-                +'<div style="border: 1px solid black;font-weight: bold;border-bottom: 1px solid black;background-color: #6666FF;font-size: 115%;">'
-                    +'<div style="padding-left:3px;margin-top:3px;margin-bottom:3px;">'
+            '<span style="border: 1px solid black;width: 100%;display:inline-block;background-color:'+mainBackgroundColor+';padding-right:'+rightPadding+';">'
+                +'<span style="border: 1px solid black;display:inline-block;width: 100%;font-weight: bold;border-bottom: 1px solid black;background-color:'+headerBackgroundColor+';font-size: 115%;padding-right:'+rightPadding+';">'
+                    +'<span style="padding-left:3px;display:inline-block;width: 100%;margin-top:3px;margin-bottom:3px;">'
                         +header
-                    +'</div>'
-            	+'</div>'
-                +'<div style="border: 1px solid black;background-color: #B266FF;padding: 3px 3px;">'
-                	+body;
+                    +'</span>'
+                +'</span>'
+                +'<span style="border: 1px solid black;display:inline-block;width: 100%;background-color:'+mainBackgroundColor+';padding-right:'+rightPadding+';">'
+                    +body
                     
         if(nextSteps) {
             text = text
-                +'<div style="padding-left:10px;margin-top:3px;margin-bottom:3px;">'
-                    +'<div style="border-top: 1px solid #6666FF;margin-top:10px;border-bottom: 1px solid #6666FF;">'
+                +'<span style="padding-left:10px;display:inline-block;width: 100%;margin-top:3px;margin-bottom:3px;padding-right:'+rightPadding+';">'
+                    +'<span style="border-top: 1px solid '+headerBackgroundColor+';display:inline-block;width: 100%;margin-top:10px;border-bottom: 1px solid '+headerBackgroundColor+';">'
                         +'<div style="margin-top:10px;"></div>'
                         +nextSteps
-                    +'</div>'
-                +'</div>';
+                    +'</span>'
+                +'</span>';
         }
         
         text = text
-                +'</div>'
-            +'</div>';
+                +'</span>'
+            +'</span>';
         
         displayUi(who, text);
     },
@@ -1849,7 +1855,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(state.APIRoomManagement.uiPreference === 0) {
             return '[' + topic + '](!api-room help ' + topic + ') ';
         } else {
-            return '<span style="border: 1px solid white;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px"> <a href="!api-room help ' + topic + '">' + topic + '</a> </span> ';
+            return '<span style="border: 1px solid white;display:inline-block;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px;"> <a href="!api-room help ' + topic + '">' + topic + '</a> </span> ';
         }
     },
     
@@ -1869,7 +1875,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(state.APIRoomManagement.uiPreference === 0) {
            return '[' + text + '](!api-room ' + command + ') ';
         } else {
-            return '<span style="border: 1px solid white;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px"> <a href="!api-room ' + command + '">' + text + '</a> </span> ';
+            return '<span style="border: 1px solid white;display:inline-block;background-color: ' + buttonBackgroundColor + ';padding: 5px 5px;"> <a href="!api-room ' + command + '">' + text + '</a> </span> ';
         }
     },
     
@@ -1906,7 +1912,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>To create a room, select an empty image and run <b>!api-room</b>.'
                         +'<p>As soon as the image becomes a room, it is pushed to the Maps layer as a convenience and is from then on managed by the API. The room can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
                         +'<p>Doors on rooms are drawn to whatever door images are set up. To set a door image, select an empty image with the image you want for your door and run <b>!api-room</b>. This needs to be set up for both open and closed doors.</p>'
-                   +'</div>',
+                    +'</div>',
                      
                     helpLinks('Sub-topics',['door privledges'])
                 );
