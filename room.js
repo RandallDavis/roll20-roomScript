@@ -372,6 +372,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     room.prototype.addSide = function(command, msg) {
+        var success = true;
         var commands = command.split(' ');
         
         //validate side:
@@ -383,7 +384,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 sendWhisper(who, "Side must be 't', 'b', 'l', or 'r'.");
-                return;
+                return false;
         }
         
         //validate type:
@@ -395,10 +396,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 sendWhisper(who, "Type must be 'empty', 'wall', 'doorClosed', or 'doorOpen'.");
-                return;
+                return false;
         }
         
-        this.load();
+        success = success && this.load();
         
         //make sure that the room doesn't already have a side where the new one is being added:
         var found = false;
@@ -409,7 +410,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         });
         if(found) {
             sendWhisper(msg.who, "That side is already on that room.");
-            return;
+            return false;
         }
         
         //create the side:
@@ -427,7 +428,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 log('Unknown sideType in room.addSide().');
-                break;
+                return false;
         }
         
         side.setProperty('sideOfRoom', commands[0]);
@@ -449,6 +450,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         this.save();
         this.draw();
+        
+        return success;
     };
     
     room.prototype.removeSide = function(sideOfRoom, msg) {
@@ -1322,7 +1325,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     addRoomSide = function(command, msg) {
         var room = getManagedTokenById(msg.selected[0]._id);
-        room.addSide(command, msg);
+        return room.addSide(command, msg);
     },
     
     removeRoomSide = function(sideOfRoom, msg) {
@@ -1674,7 +1677,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             var chatCommand = msg.content.split(' ');
             if(chatCommand.length == 1) {
                 //transfer control to intuitive UI layer:
-                intuit(msg);
+                intuit(msg.selected, msg.who);
             } else {
                 var followUpAction = new Array();
                 
@@ -1711,8 +1714,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         } else {
                             if(validateSelections(msg, ['room'])) {
                                 chatCommand = msg.content.replace('!api-room roomSideAdd ', '');
-                                addRoomSide(chatCommand, msg);
-                                //TODO: refresh
+                                if(addRoomSide(chatCommand, msg)) {
+                                    followUpAction['refresh'] = true;
+                                } else {
+                                    followUpAction['message'] = 'Adding the room side was unsuccessful.';
+                                }
                             }
                         }
                         break;
@@ -1852,6 +1858,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 
                 if(followUpAction['message']) {
                     sendWhisper(msg.who, followUpAction['message']);
+                }
+                
+                if(followUpAction['refresh']) {
+                    intuit(msg.selected, msg.who);
                 }
             }
         }
@@ -2057,8 +2067,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     //intuitive command interface for handling an empty image:
-    intuitEmptyImage = function(msg) {
-        displayHelp(msg.who, 'Empty Image Actions',
+    intuitEmptyImage = function(selected, who) {
+        displayHelp(who, 'Empty Image Actions',
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Actions',[
                         ['create room','roomAdd'],
@@ -2097,7 +2107,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     //intuitive command interface for handling a room:
-    intuitRoom = function(msg, room) {
+    intuitRoom = function(selected, who, room) {
         room.load();
         var sides = room.getProperty('sides');
         
@@ -2111,7 +2121,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Room Actions', body);
+        displayHelp(who, 'Room Actions', body);
     },
     
     //helper function for intuiting features of an adhoc or room door:
@@ -2123,7 +2133,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     //intuitive command interface for handling a room door:
-    intuitRoomDoor = function(msg, door) {
+    intuitRoomDoor = function(selected, who, door) {
         door.load();
         
         var body = 
@@ -2132,11 +2142,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body);
     },
     
     //intuitive command interface for handling an adhoc door:
-    intuitAdhocDoor = function(msg, door) {
+    intuitAdhocDoor = function(selected, who, door) {
         door.load();
         
         var body = 
@@ -2150,79 +2160,79 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body);
     },
     
     //intuitive command interface for handling an adhoc wall:
-    intuitAdhocWall = function(msg) {
+    intuitAdhocWall = function(selected, who) {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Wall',[['remove','adhocWallRemove']])
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Adhoc Wall Actions', body);
+        displayHelp(who, 'Adhoc Wall Actions', body);
     },
     
     //intuitive command interface for handling an adhoc door and an empty image:
-    intuitAdhocDoorAndEmpty = function(msg) {
+    intuitAdhocDoorAndEmpty = function(selected, who) {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['complete set','adhocDoorAdd']])
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body);
     },
     
     //intuitive command interface that presents wizard-like options based on context:
-    intuit = function(msg) {
-        if(!msg.selected) {
+    intuit = function(selected, who) {
+        if(!selected) {
             //nothing is selected, so nothing practical can be accomplished (except maybe settings, which is silly to intuit); assume that help documentation is the best course of action:
-            help(msg.who, '');
-        } else if(msg.selected.length == 1) {
-            var token = getObj('graphic', msg.selected[0]._id);
+            help(who, '');
+        } else if(selected.length == 1) {
+            var token = getObj('graphic', selected[0]._id);
             if(!token) {
                 //there is only intuitive functionality for graphics being selected:
-                help(msg.who, '');
+                help(who, '');
             } else {
                 var managedToken = getManagedToken(token);
                 if(!managedToken) {
-                    intuitEmptyImage(msg);
+                    intuitEmptyImage(selected, who);
                 } else if(managedToken.isType('room')) {
-                    intuitRoom(msg, managedToken);
+                    intuitRoom(selected, who, managedToken);
                 } else if(managedToken.isType('roomDoor')) {
-                    intuitRoomDoor(msg, managedToken);
+                    intuitRoomDoor(selected, who, managedToken);
                 } else if(managedToken.isType('adhocDoor')) {
-                    intuitAdhocDoor(msg, managedToken);
+                    intuitAdhocDoor(selected, who, managedToken);
                 } else if(managedToken.isType('adhocWall')) {
-                    intuitAdhocWall(msg);
+                    intuitAdhocWall(selected, who);
                 } else {
-                    sendWhisper(msg.who, 'No actions are known for the selected image.');
+                    sendWhisper(who, 'No actions are known for the selected image.');
                 }
             }
-        } else if(msg.selected.length == 2) {
-            var graphic1 = getObj('graphic', msg.selected[0]._id);
-            var graphic2 = getObj('graphic', msg.selected[1]._id);
+        } else if(selected.length == 2) {
+            var graphic1 = getObj('graphic', selected[0]._id);
+            var graphic2 = getObj('graphic', selected[1]._id);
             
             if(!graphic1 || !graphic2) {
-                sendWhisper(msg.who, 'Only images should be selected.');
+                sendWhisper(who, 'Only images should be selected.');
             } else {
                 var managedToken1 = getManagedToken(graphic1);
                 var managedToken2 = getManagedToken(graphic2);
                 
                 if(managedToken1 && managedToken2) {
-                    sendWhisper(msg.who, 'No actions are known for cases where neither selected image is empty.');
+                    sendWhisper(who, 'No actions are known for cases where neither selected image is empty.');
                 } else if(!(managedToken1 || managedToken2)) {
-                    sendWhisper(msg.who, 'No actions are known for cases where two empty images are selected.');
+                    sendWhisper(who, 'No actions are known for cases where two empty images are selected.');
                 } else if(!((managedToken1 && managedToken1.isType('adhocDoor')) || (managedToken2 && managedToken2.isType('adhocDoor')))) {
-                    sendWhisper(msg.who, 'No actions are known for cases where one selected image is empty and the other is not an adhoc door.');
+                    sendWhisper(who, 'No actions are known for cases where one selected image is empty and the other is not an adhoc door.');
                 } else {
-                    intuitAdhocDoorAndEmpty(msg);
+                    intuitAdhocDoorAndEmpty(selected, who);
                 }
             }
         } else {
-            sendWhisper(msg.who, 'Too many objects are selected.');
+            sendWhisper(who, 'Too many objects are selected.');
         }
     },
     
