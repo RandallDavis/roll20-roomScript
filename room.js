@@ -455,9 +455,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     room.prototype.removeSide = function(sideOfRoom, msg) {
+        var success = true;
         var room = this;
         
-        this.load();
+        success = success && this.load();
         
         var side;
         var sides = this.getProperty('sides');
@@ -473,12 +474,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         if(!side) {
             sendWhisper(msg.who, "The side '" + sideOfRoom + "' cannot be found in the selected room.");
-            return;
+            return false;
         }
         
-        side.destroy();
+        success = success && side.destroy();
         
         this.save();
+        
+        return success;
     };
     
     inheritPrototype(adhocWall, managedToken);
@@ -1330,7 +1333,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     removeRoomSide = function(sideOfRoom, msg) {
         var room = getManagedTokenById(msg.selected[0]._id);
-        room.removeSide(sideOfRoom, msg);
+        return room.removeSide(sideOfRoom, msg);
     },
     
     toggleDoorLock = function(msg) {
@@ -1728,8 +1731,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         } else {
                             if(validateSelections(msg, ['room'])) {
                                 chatCommand = msg.content.replace('!api-room roomSideRemove ', '');
-                                removeRoomSide(chatCommand, msg);
-                                //TODO: refresh
+                                if(removeRoomSide(chatCommand, msg)) {
+                                    followUpAction['refresh'] = true;
+                                } else {
+                                    followUpAction['message'] = 'Removing the room side was unsuccessful.';
+                                }
                             }
                         }
                         break;
