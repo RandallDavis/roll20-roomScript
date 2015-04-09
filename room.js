@@ -1850,8 +1850,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     case 'adhocDoorRemove':
                         if(validateSelections(msg, ['adhocDoor'])) {
-                            destroyManagedToken(msg);
-                            //TODO: confirm
+                            if(destroyManagedToken(msg)) {
+                                followUpAction['message'] = 'Adhoc door successfully removed.';
+                            } else {
+                                followUpAction['message'] = 'Adhoc door remove attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'doorPrivsDefaultSet':
