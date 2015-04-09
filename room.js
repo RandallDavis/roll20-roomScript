@@ -2,7 +2,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.2,
+    var version = 3.3,
         schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
@@ -189,9 +189,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     managedToken.prototype.destroy = function() {
-        this.load();
+        var success = true;
+        
+        success = success && this.load();
         deleteObjects(this.getProperty('wallIds'));
         this.getProperty('token').remove();
+        
+        return success;
     };
     
     inheritPrototype(room, managedToken);
@@ -220,6 +224,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     room.prototype.load = function() {
         var room = this;
+        var success = true;
         
         var metaSides = this.getProperty('token').get('gmnotes').match(/\*\S\*([^\*]+)/g);
         this.initializeCollectionProperty('sides');
@@ -246,6 +251,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     default:
                         log('Unknown sideType of ' + metaSide[0] + ' in room.load().');
+                        success = false;
                         break;
                 }
                 
@@ -270,6 +276,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 room.setProperty('sides', side);
             });
         }
+        
+        return success;
     };
     
     room.prototype.save = function() {
@@ -352,14 +360,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     room.prototype.destroy = function() {
-        this.load();
+        var success = true;
+        
+        success = success && this.load();
         this.getProperty('sides').forEach(function(side) {
             side.destroy();
         });
-        managedToken.prototype.destroy.call(this);
+        success = success && managedToken.prototype.destroy.call(this);
+        
+        return success;
     };
     
     room.prototype.addSide = function(command, msg) {
+        var success = true;
         var commands = command.split(' ');
         
         //validate side:
@@ -371,7 +384,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 sendWhisper(who, "Side must be 't', 'b', 'l', or 'r'.");
-                return;
+                return false;
         }
         
         //validate type:
@@ -383,10 +396,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 sendWhisper(who, "Type must be 'empty', 'wall', 'doorClosed', or 'doorOpen'.");
-                return;
+                return false;
         }
         
-        this.load();
+        success = success && this.load();
         
         //make sure that the room doesn't already have a side where the new one is being added:
         var found = false;
@@ -397,7 +410,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         });
         if(found) {
             sendWhisper(msg.who, "That side is already on that room.");
-            return;
+            return false;
         }
         
         //create the side:
@@ -415,7 +428,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 log('Unknown sideType in room.addSide().');
-                break;
+                return false;
         }
         
         side.setProperty('sideOfRoom', commands[0]);
@@ -437,12 +450,15 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         this.save();
         this.draw();
+        
+        return success;
     };
     
     room.prototype.removeSide = function(sideOfRoom, msg) {
+        var success = true;
         var room = this;
         
-        this.load();
+        success = success && this.load();
         
         var side;
         var sides = this.getProperty('sides');
@@ -458,12 +474,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
         
         if(!side) {
             sendWhisper(msg.who, "The side '" + sideOfRoom + "' cannot be found in the selected room.");
-            return;
+            return false;
         }
         
-        side.destroy();
+        success = success && side.destroy();
         
         this.save();
+        
+        return success;
     };
     
     inheritPrototype(adhocWall, managedToken);
@@ -474,6 +492,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(metaWall) {
             this.setProperty('wallIds', metaWall[0].substring(3));
         }
+        
+        return true;
     };
     
     adhocWall.prototype.save = function() {
@@ -531,9 +551,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     door.prototype.toggleLock = function() {
-        this.load();
+        var success = true;
+        
+        success = success && this.load();
         this.setProperty('locked', !this.getProperty('locked'));
         this.save();
+        
+        return success;
     };
     
     inheritPrototype(roomDoor, door);
@@ -562,6 +586,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             metaFeature = metaFeature[0].substring(3).split('.');
             this.setProperty('locked', metaFeature[0] == '1');
         }
+        
+        return true;
     };
     
     roomDoor.prototype.save = function() {
@@ -662,12 +688,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     adhocDoor.prototype.destroy = function() {
-        this.load();
+        var success = true;
+        
+        success = success && this.load();
         
         var companionDoor = this.getProperty('companionDoor');
         
         if(companionDoor) {
-            companionDoor.load();
+            success = success && companionDoor.load();
             
             //unlink doors:
             this.setProperty('companionDoor', null);
@@ -676,10 +704,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
             this.save();
             companionDoor.save();
             
-            companionDoor.destroy();
+            success = success && companionDoor.destroy();
         }
         
-        door.prototype.destroy.call(this);
+        success = success && door.prototype.destroy.call(this);
+        
+        return success;
     };
     
     adhocDoor.prototype.load = function() {
@@ -717,6 +747,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             metaFeature = metaFeature[0].substring(3).split('.');
             this.setProperty('locked', metaFeature[0] == '1');
         }
+        
+        return true;
     };
     
     adhocDoor.prototype.save = function() {
@@ -907,6 +939,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     roomSide.prototype.destroy = function() {
         deleteObjects(this.getProperty('wallIds'));
+        
+        return true;
     };
     
     roomSide.prototype.shouldDrawWalls = function(layer) {
@@ -1084,6 +1118,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     roomSideDoor.prototype.destroy = function() {
+        var success = true;
+        
         var doorOpen = this.getProperty('doorOpen');
         if(doorOpen) {
             doorOpen.getProperty('token').remove();
@@ -1094,7 +1130,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
             doorClosed.getProperty('token').remove();
         }
         
-        roomSide.prototype.destroy.call(this);
+        success = success && roomSide.prototype.destroy.call(this);
+        
+        return success;
     };
     
     /* managed tokens - end */
@@ -1270,7 +1308,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 break;
             default:
                 log('Unknown tokenType of ' + tokenType + ' in createManagedToken().');
-                break;
+                return false;
         }
         
         if(token.isType('door')) {
@@ -1283,26 +1321,28 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
         
         token.draw();
+        
+        return true;
     },
     
     destroyManagedToken = function(msg) {
         var token = getManagedTokenById(msg.selected[0]._id);
-        token.destroy();
+        return token.destroy();
     },
     
     addRoomSide = function(command, msg) {
         var room = getManagedTokenById(msg.selected[0]._id);
-        room.addSide(command, msg);
+        return room.addSide(command, msg);
     },
     
     removeRoomSide = function(sideOfRoom, msg) {
         var room = getManagedTokenById(msg.selected[0]._id);
-        room.removeSide(sideOfRoom, msg);
+        return room.removeSide(sideOfRoom, msg);
     },
     
     toggleDoorLock = function(msg) {
         var door = getManagedTokenById(msg.selected[0]._id);
-        door.toggleLock();
+        return door.toggleLock();
     },
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
@@ -1353,8 +1393,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             },
             topMid : {
                 x : 0,
-            	y : 0
-    		},
+                y : 0
+        	},
     		topRight : {
     			x : 0,
     			y : 0
@@ -1505,16 +1545,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(doorType) {
             case 'doorClosed':
                 state.APIRoomManagement.doorClosedPicUrl = imgsrc;
-                sendWhisper(msg.who, 'Closed door image set.');
                 break;
             case 'doorOpen': 
                 state.APIRoomManagement.doorOpenPicUrl = imgsrc;
-                sendWhisper(msg.who, 'Open door image set.');
                 break;
             default:
                 log('Unknown type ' + doorType + ' in setDoorUrl.');
-                break;
+                return false;
         }
+        
+        return true;
     },
     
     //set default for players being able to control doors:
@@ -1522,49 +1562,38 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(priv) {
             case 'gm':
                 state.APIRoomManagement.doorPrivsDefault = 0;
-                sendWhisper(who, "Door privs set to 'gm'.");
                 break;
             case 'players':
                 state.APIRoomManagement.doorPrivsDefault = 1;
-                sendWhisper(who, "Door privs set to 'players'.");
                 break;
             default:
                 sendWhisper(who, "Unexpected privledge value of '" + priv + "'. The expected values are 'gm' or 'players'.");
-                break;
+                return false;
         }
+        
+        return true;
     },
     
     setUiPreference = function(who, setting) {
         switch(setting) {
             case 'chat':
                 state.APIRoomManagement.uiPreference = 0;
-                sendWhisper(who, 'UI will output to chat window.');
                 break;
             case 'handout':
                 state.APIRoomManagement.uiPreference = 1;
-                sendWhisper(who, 'UI will output to a handout.');
                 break;
             default:
                 sendWhisper(who, "Unexpected setting of '" + setting + "'. The expected values are 'chat' or 'handout'.");
-                break;
+                return false;
         }
+        
+        return true;
     },
     
-    setAdhocDoorMoveMode = function(mode) {
-        switch(mode) {
-            case 'on':
-                state.APIRoomManagement.adhocDoorMoveMode = 1;
-                break;
-            case 'off':
-                state.APIRoomManagement.adhocDoorMoveMode = 0;
-                break;
-            case 'toggle':
-                state.APIRoomManagement.adhocDoorMoveMode = (state.APIRoomManagement.adhocDoorMoveMode + 1) % 2;
-                break;
-            default:
-                log('Unexpected mode of ' + mode + ' in setAdhocDoorMoveMode().');
-                break;
-        }
+    setAdhocDoorMoveMode = function() {
+        state.APIRoomManagement.adhocDoorMoveMode = (state.APIRoomManagement.adhocDoorMoveMode + 1) % 2;
+        
+        return true;
     },
     
     //find imgsrc that is legal for object creation:
@@ -1629,11 +1658,25 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     handleUserInput = function(msg) {
+        /*
+        Because of the way that command links work in Roll20, the 'intuitive UI' layer
+        presents links that when clicked on flow into this method (differentiated by
+        intuitive UI commands by the fact that there are arguments in the message).
+        The links work asynchronously, so there is no direct way to return a result 
+        to the user through the intuitive UI layer (which would be architecturally
+        appropriate). Therefore, responses will either be one-off messages to the user
+        or refresh commands to the intuitive UI layer (when object state is changed and
+        the selected objects are still relevant).
+        */
+        
         if(msg.type == 'api' && msg.content.match(/^!api-room/) && playerIsGM(msg.playerid)) {
             var chatCommand = msg.content.split(' ');
             if(chatCommand.length == 1) {
-                intuit(msg);
+                //transfer control to intuitive UI layer:
+                intuit(msg.selected, msg.who);
             } else {
+                var followUpAction = new Array();
+                
                 switch(chatCommand[1]) {
                     case 'help':
                         if(chatCommand.length <= 2) {
@@ -1647,12 +1690,20 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     case 'roomAdd':
                         if(validateSelections(msg, ['empty'])) {
-                            createManagedToken(msg, 'room');
+                            if(createManagedToken(msg, 'room')) {
+                                followUpAction['message'] = 'Room successfully created.';
+                            } else {
+                                followUpAction['message'] = 'Room creation attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'roomRemove':
                         if(validateSelections(msg, ['room'])) {
-                            destroyManagedToken(msg);
+                            if(destroyManagedToken(msg)) {
+                                followUpAction['message'] = 'Room successfully removed.';
+                            } else {
+                                followUpAction['message'] = 'Room remove attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'roomSideAdd':
@@ -1661,7 +1712,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         } else {
                             if(validateSelections(msg, ['room'])) {
                                 chatCommand = msg.content.replace('!api-room roomSideAdd ', '');
-                                addRoomSide(chatCommand, msg);
+                                if(addRoomSide(chatCommand, msg)) {
+                                    followUpAction['refresh'] = true;
+                                } else {
+                                    followUpAction['message'] = 'Adding the room side was unsuccessful.';
+                                }
                             }
                         }
                         break;
@@ -1671,7 +1726,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         } else {
                             if(validateSelections(msg, ['room'])) {
                                 chatCommand = msg.content.replace('!api-room roomSideRemove ', '');
-                                removeRoomSide(chatCommand, msg);
+                                if(removeRoomSide(chatCommand, msg)) {
+                                    followUpAction['refresh'] = true;
+                                } else {
+                                    followUpAction['message'] = 'Removing the room side was unsuccessful.';
+                                }
                             }
                         }
                         break;
@@ -1683,10 +1742,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             if(validateSelections(msg, ['empty'])) {
                                 switch(chatCommand[2]) {
                                     case "open":
-                                        setDoorUrl(msg, 'doorOpen');
+                                        if(setDoorUrl(msg, 'doorOpen')) {
+                                            followUpAction['message'] = 'Open door image successfully set.';
+                                        } else {
+                                            followUpAction['message'] = 'Open door image setting was unsuccessful.';
+                                        }
                                         break;
                                     case "closed":
-                                        setDoorUrl(msg, 'doorClosed');
+                                        if(setDoorUrl(msg, 'doorClosed')) {
+                                           followUpAction['message'] = 'Closed door image successfully set.';
+                                        } else {
+                                            followUpAction['message'] = 'Closed door image setting was unsuccessful.';
+                                        }
                                         break;
                                     default:
                                         help(msg.who, 'roomDoorImageSet');
@@ -1697,12 +1764,20 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     case 'adhocWallAdd':
                         if(validateSelections(msg, ['empty'])) {
-                            createManagedToken(msg, 'adhocWall');
+                            if(createManagedToken(msg, 'adhocWall')) {
+                                followUpAction['message'] = 'Adhoc wall successfully created.';
+                            } else {
+                                followUpAction['message'] = 'Adhoc wall creation attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'adhocWallRemove':
                         if(validateSelections(msg, ['adhocWall'])) {
-                            destroyManagedToken(msg);
+                            if(destroyManagedToken(msg)) {
+                                followUpAction['message'] = 'Adhoc wall successfully removed.';
+                            } else {
+                                followUpAction['message'] = 'Adhoc wall remove attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'adhocDoorAdd':
@@ -1711,10 +1786,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             if(validateSelections(msg, ['empty'])) {
                                 switch(chatCommand[2]) {
                                     case 'open':
-                                        createManagedToken(msg, 'adhocDoorOpen');
+                                        if(createManagedToken(msg, 'adhocDoorOpen')) {
+                                            followUpAction['message'] = 'Adhoc door successfully created.';
+                                        } else {
+                                            followUpAction['message'] = 'Adhoc door creation attempted, but there were problems.';
+                                        }
                                         break;
                                     case 'closed':
-                                        createManagedToken(msg, 'adhocDoorClosed');
+                                        if(createManagedToken(msg, 'adhocDoorClosed')) {
+                                            followUpAction['message'] = 'Adhoc door successfully created.';
+                                        } else {
+                                            followUpAction['message'] = 'Adhoc door creation attempted, but there were problems.';
+                                        }
                                         break;
                                     default:
                                         help(msg.who, 'adhocDoorAdd');
@@ -1724,55 +1807,68 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         } else if(chatCommand.length == 2) {
                             //if there is no parameter, then this is appending a second door to an adhoc door set:
                             if(validateSelections(msg, ['empty', 'adhocDoor'])) {
-                                createManagedToken(msg, 'adhocDoorCompanion');
+                                if(createManagedToken(msg, 'adhocDoorCompanion')) {
+                                    followUpAction['message'] = 'Adhoc door set successfully created.';
+                                } else {
+                                    followUpAction['message'] = 'Adhoc door set creation attempted, but there were problems.';
+                                }
                             }
                         } else {
                             help(msg.who, 'adhocDoorAdd');
                         }
                         break;
                     case 'adhocDoorMove':
-                        if(chatCommand.length == 3) {
-                            //if there is a parameter, then this should explicitly specify a move mode:
-                            switch(chatCommand[2]) {
-                                case 'on':
-                                    setAdhocDoorMoveMode('on');
-                                    break;
-                                case 'off':
-                                    setAdhocDoorMoveMode('off');
-                                    break;
-                                default:
-                                    help(msg.who, 'adhocDoorMove');
-                                    break;
+                        if(chatCommand.length == 2) {
+                            if(setAdhocDoorMoveMode()) {
+                                //return to the specific refreshed help topic:
+                                help(msg.who, 'adhocDoorMove');
+                            } else {
+                                followUpAction['message'] = 'There were problems updating the adhoc door move mode setting.';
                             }
-                        } else if(chatCommand.length == 2) {
-                            //implied toggling of move mode:
-                            setAdhocDoorMoveMode('toggle');
                         } else {
                             help(msg.who, 'adhocDoorMove');
                         }
                         break;
                     case 'adhocDoorRemove':
                         if(validateSelections(msg, ['adhocDoor'])) {
-                            destroyManagedToken(msg);
+                            if(destroyManagedToken(msg)) {
+                                followUpAction['message'] = 'Adhoc door successfully removed.';
+                            } else {
+                                followUpAction['message'] = 'Adhoc door remove attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'doorPrivsDefaultSet':
                         if(chatCommand.length != 3) {
                             help(msg.who, 'doorPrivsDefaultSet');
                         } else {
-                            setDoorPrivsDefault(msg.who, chatCommand[2]);
+                            if(setDoorPrivsDefault(msg.who, chatCommand[2])) {
+                                //return to the specific refreshed help topic:
+                                help(msg.who, 'doorPrivsDefaultSet');
+                            } else {
+                                followUpAction['message'] = 'There were problems updating the door privledges setting.';
+                            }
                         }
                         break;
                     case 'uiPreference':
                         if(chatCommand.length != 3) {
-                            help(msg.who, 'uiPreference'); //TODO: implement this
+                            help(msg.who, 'uiPreference');
                         } else {
-                            setUiPreference(msg.who, chatCommand[2]);
+                            if(setUiPreference(msg.who, chatCommand[2])) {
+                                //return to the specific refreshed help topic:
+                                help(msg.who, 'uiPreference');
+                            } else {
+                                followUpAction['message'] = 'There were problems updating the UI preference.';
+                            }
                         }
                         break;
                     case "toggleDoorLock":
                         if(validateSelections(msg, ['door'])) {
-                            toggleDoorLock(msg);
+                            if(toggleDoorLock(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Toggling the door'+ch("'")+'s lock was unsuccessful.';
+                            }
                         }
                         break;
                     /*case "toggleDoorTrap":
@@ -1782,6 +1878,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     default:
                         help(msg.who, '');
                         break;
+                }
+                
+                if(followUpAction['message']) {
+                    sendWhisper(msg.who, followUpAction['message']);
+                }
+                
+                if(followUpAction['refresh']) {
+                    intuit(msg.selected, msg.who);
                 }
             }
         }
@@ -1917,24 +2021,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     helpLinks('Sub-topics',['door privledges'])
                 );
                 break;
+            case "doorPrivsDefaultSet":
             case "door privledges":
                 displayHelp(who, 'Room API - Door Privledges',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>This sets the default for who should be able to toggle doors. Setting it to '+ch("'")+'players'+ch("'")+' makes it that anybody can toggle doors. Setting it to '+ch("'")+'gm'+ch("'")+' makes it that only GMs can toggle them.</p>'
                         +'<p>This can be overridden on individual doors (such as a door that is locked) by double clicking the door and changing the '+ch("'")+'Controlled By'+ch("'")+' settings.</p>'
-                        +commandLink('set it to gm','doorPrivsDefaultSet gm')
-                        +commandLink('set it to players','doorPrivsDefaultSet players')
+                        +(stateOptionsDoorPrivs())
                     +'</div>'
                 );
                 break;
+            case "uiPreference":
             case "ui preference":
                 displayHelp(who, 'Room API - UI Preferences',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Sets where user interface (UI) commands should be sent.</p>'
                         +'<p>If this is set to '+ch("'")+'handout'+ch("'")+', it will appear in a handout called '+ch("'")+'API-RoomManagement'+ch("'")+'.</p>'
                         +'<p>Actions in the handout are not functional if the handout is popped out.</p>'
-                        +commandLink('set it to chat','uiPreference chat')
-                        +commandLink('set it to handout','uiPreference handout')
+                        +(stateOptionsUiPreference())
                     +'</div>'
                 );
                 break;
@@ -1959,15 +2063,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>'
                 );
                 break;
+            case "adhocDoorMove":
             case "adhoc doors":
+            case "move mode":
                 displayHelp(who, 'Room API - Adhoc Doors',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Adhoc doors are created in two steps. First, select an empty image and run <b>!api-room</b>. Second, select the first image along with another empty image and run <b>!api-room</b>.</p>'
                         +'<p>A LoS wall will be drawn through the door when it is closed.</p>'
                         +'<p>Adhoc doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
                         +'<p>When <b>'+ch("'")+'Move Mode'+ch("'")+'</b> is on, interacting with adhoc doors does not toggle them. This is used to reposition, rotate, and resize them.</p>'
-                        +commandLink('turn move mode on','adhocDoorMove on')
-                        +commandLink('turn move mode off','adhocDoorMove off')    
+                        +(stateOptionsMoveMode())
                     +'</div>',
                      
                     helpLinks('Sub-topics',['door privledges'])
@@ -1986,9 +2091,45 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     },
     
+    stateOptionsUiPreference = function() {
+        var text = 
+            '<p>UI preference is currently set to <u><b>'
+            + (state.APIRoomManagement.uiPreference == 0 ? 'chat' : 'handout')
+            +'</b></u>.</p>'
+            + (state.APIRoomManagement.uiPreference == 0 
+                ? commandLink('set it to handout','uiPreference handout')
+                : commandLink('set it to chat','uiPreference chat'));
+        
+        return text;
+    },
+    
+    stateOptionsDoorPrivs = function() {
+        var text = 
+            '<p>Default door privledges are currently set to <u><b>'
+            + (state.APIRoomManagement.doorPrivsDefault == 0 ? 'gm' : 'players')
+            +'</b></u>.</p>'
+            + (state.APIRoomManagement.doorPrivsDefault == 0 
+                ? commandLink('set it to players','doorPrivsDefaultSet players')
+                : commandLink('set it to gm','doorPrivsDefaultSet gm'));
+        
+        return text;
+    },
+    
+    stateOptionsMoveMode = function() {
+        var text = 
+            '<p>Adhoc door move mode is currently set to <u><b>'
+            + (state.APIRoomManagement.adhocDoorMoveMode == 0 ? 'off' : 'on')
+            +'</b></u>.</p>'
+            + (state.APIRoomManagement.adhocDoorMoveMode == 0 
+                ? commandLink('turn move mode on','adhocDoorMove')
+                : commandLink('turn move mode off','adhocDoorMove'));
+        
+        return text;
+    },
+    
     //intuitive command interface for handling an empty image:
-    intuitEmptyImage = function(msg) {
-        displayHelp(msg.who, 'Empty Image Actions',
+    intuitEmptyImage = function(selected, who) {
+        displayHelp(who, 'Empty Image Actions',
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Actions',[
                         ['create room','roomAdd'],
@@ -2027,7 +2168,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     //intuitive command interface for handling a room:
-    intuitRoom = function(msg, room) {
+    intuitRoom = function(selected, who, room) {
         room.load();
         var sides = room.getProperty('sides');
         
@@ -2041,7 +2182,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Room Actions', body);
+        displayHelp(who, 'Room Actions', body);
     },
     
     //helper function for intuiting features of an adhoc or room door:
@@ -2053,7 +2194,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     //intuitive command interface for handling a room door:
-    intuitRoomDoor = function(msg, door) {
+    intuitRoomDoor = function(selected, who, door) {
         door.load();
         
         var body = 
@@ -2062,97 +2203,94 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body);
     },
     
     //intuitive command interface for handling an adhoc door:
-    intuitAdhocDoor = function(msg, door) {
+    intuitAdhocDoor = function(selected, who, door) {
         door.load();
         
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['remove','adhocDoorRemove']])
                 +commandLinks('Features',intuitDoorFeatures(door))
-                +commandLinks('Move Mode (affects all adhoc doors)',[
-                        ['on','adhocDoorMove on'],
-                        ['off','adhocDoorMove off']
-                    ])
+                +helpLinks('Move Mode (affects all adhoc doors)',['move mode'])
                 +commandLinks('Help',[['help','help']])
             +'</div>';
-        
-        displayHelp(msg.who, 'Adhoc Door Actions', body);
+            
+        displayHelp(who, 'Adhoc Door Actions', body);
     },
     
     //intuitive command interface for handling an adhoc wall:
-    intuitAdhocWall = function(msg) {
+    intuitAdhocWall = function(selected, who) {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Wall',[['remove','adhocWallRemove']])
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Adhoc Wall Actions', body);
+        displayHelp(who, 'Adhoc Wall Actions', body);
     },
     
     //intuitive command interface for handling an adhoc door and an empty image:
-    intuitAdhocDoorAndEmpty = function(msg) {
+    intuitAdhocDoorAndEmpty = function(selected, who) {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['complete set','adhocDoorAdd']])
                 +commandLinks('Help',[['help','help']])
             +'</div>';
         
-        displayHelp(msg.who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body);
     },
     
     //intuitive command interface that presents wizard-like options based on context:
-    intuit = function(msg) {
-        if(!msg.selected) {
+    intuit = function(selected, who) {
+        if(!selected) {
             //nothing is selected, so nothing practical can be accomplished (except maybe settings, which is silly to intuit); assume that help documentation is the best course of action:
-            help(msg.who, '');
-        } else if(msg.selected.length == 1) {
-            var token = getObj('graphic', msg.selected[0]._id);
+            help(who, '');
+        } else if(selected.length == 1) {
+            var token = getObj('graphic', selected[0]._id);
             if(!token) {
                 //there is only intuitive functionality for graphics being selected:
-                help(msg.who, '');
+                help(who, '');
             } else {
                 var managedToken = getManagedToken(token);
                 if(!managedToken) {
-                    intuitEmptyImage(msg);
+                    intuitEmptyImage(selected, who);
                 } else if(managedToken.isType('room')) {
-                    intuitRoom(msg, managedToken);
+                    intuitRoom(selected, who, managedToken);
                 } else if(managedToken.isType('roomDoor')) {
-                    intuitRoomDoor(msg, managedToken);
+                    intuitRoomDoor(selected, who, managedToken);
                 } else if(managedToken.isType('adhocDoor')) {
-                    intuitAdhocDoor(msg, managedToken);
+                    intuitAdhocDoor(selected, who, managedToken);
                 } else if(managedToken.isType('adhocWall')) {
-                    intuitAdhocWall(msg);
+                    intuitAdhocWall(selected, who);
                 } else {
-                    sendWhisper(msg.who, 'No actions are known for the selected image.');
+                    sendWhisper(who, 'No actions are known for the selected image.');
                 }
             }
-        } else if(msg.selected.length == 2) {
-            var graphic1 = getObj('graphic', msg.selected[0]._id);
-            var graphic2 = getObj('graphic', msg.selected[1]._id);
+        } else if(selected.length == 2) {
+            var graphic1 = getObj('graphic', selected[0]._id);
+            var graphic2 = getObj('graphic', selected[1]._id);
             
             if(!graphic1 || !graphic2) {
-                sendWhisper(msg.who, 'Only images should be selected.');
+                sendWhisper(who, 'Only images should be selected.');
             } else {
                 var managedToken1 = getManagedToken(graphic1);
                 var managedToken2 = getManagedToken(graphic2);
                 
                 if(managedToken1 && managedToken2) {
-                    sendWhisper(msg.who, 'No actions are known for cases where neither selected image is empty.');
+                    sendWhisper(who, 'No actions are known for cases where neither selected image is empty.');
                 } else if(!(managedToken1 || managedToken2)) {
-                    sendWhisper(msg.who, 'No actions are known for cases where two empty images are selected.');
+                    sendWhisper(who, 'No actions are known for cases where two empty images are selected.');
                 } else if(!((managedToken1 && managedToken1.isType('adhocDoor')) || (managedToken2 && managedToken2.isType('adhocDoor')))) {
-                    sendWhisper(msg.who, 'No actions are known for cases where one selected image is empty and the other is not an adhoc door.');
+                    sendWhisper(who, 'No actions are known for cases where one selected image is empty and the other is not an adhoc door.');
                 } else {
-                    intuitAdhocDoorAndEmpty(msg);
+                    intuitAdhocDoorAndEmpty(selected, who);
                 }
             }
         } else {
-            sendWhisper(msg.who, 'Too many objects are selected.');
+            sendWhisper(who, 'Too many objects are selected.');
         }
     },
     
