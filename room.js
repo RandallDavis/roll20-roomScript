@@ -1590,21 +1590,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return true;
     },
     
-    setAdhocDoorMoveMode = function(mode) {
-        switch(mode) {
-            case 'on':
-                state.APIRoomManagement.adhocDoorMoveMode = 1;
-                break;
-            case 'off':
-                state.APIRoomManagement.adhocDoorMoveMode = 0;
-                break;
-            case 'toggle':
-                state.APIRoomManagement.adhocDoorMoveMode = (state.APIRoomManagement.adhocDoorMoveMode + 1) % 2;
-                break;
-            default:
-                log('Unexpected mode of ' + mode + ' in setAdhocDoorMoveMode().');
-                break;
-        }
+    setAdhocDoorMoveMode = function() {
+        state.APIRoomManagement.adhocDoorMoveMode = (state.APIRoomManagement.adhocDoorMoveMode + 1) % 2;
+        
+        return true;
     },
     
     //find imgsrc that is legal for object creation:
@@ -1829,25 +1818,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         }
                         break;
                     case 'adhocDoorMove':
-                        if(chatCommand.length == 3) {
-                            //if there is a parameter, then this should explicitly specify a move mode:
-                            switch(chatCommand[2]) {
-                                case 'on':
-                                    setAdhocDoorMoveMode('on');
-                                    //TODO: remove
-                                    break;
-                                case 'off':
-                                    setAdhocDoorMoveMode('off');
-                                    //TODO: remove
-                                    break;
-                                default:
-                                    help(msg.who, 'adhocDoorMove');
-                                    break;
+                        if(chatCommand.length == 2) {
+                            if(setAdhocDoorMoveMode()) {
+                                //return to the specific refreshed help topic:
+                                help(msg.who, 'adhocDoorMove');
+                            } else {
+                                followUpAction['message'] = 'There were problems updating the adhoc door move mode setting.';
                             }
-                        } else if(chatCommand.length == 2) {
-                            //implied toggling of move mode:
-                            setAdhocDoorMoveMode('toggle');
-                            //TODO: refresh refactor to show state
                         } else {
                             help(msg.who, 'adhocDoorMove');
                         }
@@ -2086,15 +2063,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>'
                 );
                 break;
+            case "adhocDoorMove":
             case "adhoc doors":
+            case "move mode":
                 displayHelp(who, 'Room API - Adhoc Doors',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Adhoc doors are created in two steps. First, select an empty image and run <b>!api-room</b>. Second, select the first image along with another empty image and run <b>!api-room</b>.</p>'
                         +'<p>A LoS wall will be drawn through the door when it is closed.</p>'
                         +'<p>Adhoc doors can be toggled from open to closed (and vice-versa) by interacting with them.</p>'
                         +'<p>When <b>'+ch("'")+'Move Mode'+ch("'")+'</b> is on, interacting with adhoc doors does not toggle them. This is used to reposition, rotate, and resize them.</p>'
-                        +commandLink('turn move mode on','adhocDoorMove on')
-                        +commandLink('turn move mode off','adhocDoorMove off')    
+                        +(stateOptionsMoveMode())
                     +'</div>',
                      
                     helpLinks('Sub-topics',['door privledges'])
@@ -2113,7 +2091,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         }
     },
     
-    //helper function for ui preference options based on current state settings:
     stateOptionsUiPreference = function() {
         var text = 
             '<p>UI preference is currently set to <u><b>'
@@ -2126,7 +2103,6 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return text;
     },
     
-    //helper function for ui preference options based on current state settings:
     stateOptionsDoorPrivs = function() {
         var text = 
             '<p>Default door privledges are currently set to <u><b>'
@@ -2135,6 +2111,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
             + (state.APIRoomManagement.doorPrivsDefault == 0 
                 ? commandLink('set it to players','doorPrivsDefaultSet players')
                 : commandLink('set it to gm','doorPrivsDefaultSet gm'));
+        
+        return text;
+    },
+    
+    stateOptionsMoveMode = function() {
+        var text = 
+            '<p>Adhoc door move mode is currently set to <u><b>'
+            + (state.APIRoomManagement.adhocDoorMoveMode == 0 ? 'off' : 'on')
+            +'</b></u>.</p>'
+            + (state.APIRoomManagement.adhocDoorMoveMode == 0 
+                ? commandLink('turn move mode on','adhocDoorMove')
+                : commandLink('turn move mode off','adhocDoorMove'));
         
         return text;
     },
@@ -2226,13 +2214,10 @@ var APIRoomManagement = APIRoomManagement || (function() {
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['remove','adhocDoorRemove']])
                 +commandLinks('Features',intuitDoorFeatures(door))
-                +commandLinks('Move Mode (affects all adhoc doors)',[
-                        ['on','adhocDoorMove on'],
-                        ['off','adhocDoorMove off']
-                    ])
+                +helpLinks('Move Mode (affects all adhoc doors)',['move mode'])
                 +commandLinks('Help',[['help','help']])
             +'</div>';
-        
+            
         displayHelp(who, 'Adhoc Door Actions', body);
     },
     
