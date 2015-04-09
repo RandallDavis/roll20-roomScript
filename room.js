@@ -1394,7 +1394,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             topMid : {
                 x : 0,
                 y : 0
-    		},
+        	},
     		topRight : {
     			x : 0,
     			y : 0
@@ -1562,16 +1562,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(priv) {
             case 'gm':
                 state.APIRoomManagement.doorPrivsDefault = 0;
-                sendWhisper(who, "Door privs set to 'gm'.");
                 break;
             case 'players':
                 state.APIRoomManagement.doorPrivsDefault = 1;
-                sendWhisper(who, "Door privs set to 'players'.");
                 break;
             default:
                 sendWhisper(who, "Unexpected privledge value of '" + priv + "'. The expected values are 'gm' or 'players'.");
-                break;
+                return false;
         }
+        
+        return true;
     },
     
     setUiPreference = function(who, setting) {
@@ -1864,9 +1864,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     case 'doorPrivsDefaultSet':
                         if(chatCommand.length != 3) {
                             help(msg.who, 'doorPrivsDefaultSet');
-                            //TODO: refresh with state
                         } else {
-                            setDoorPrivsDefault(msg.who, chatCommand[2]);
+                            if(setDoorPrivsDefault(msg.who, chatCommand[2])) {
+                                //return to the specific refreshed help topic:
+                                help(msg.who, 'doorPrivsDefaultSet');
+                            } else {
+                                followUpAction['message'] = 'There were problems updating the door privledges setting.';
+                            }
                         }
                         break;
                     case 'uiPreference':
@@ -2040,13 +2044,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     helpLinks('Sub-topics',['door privledges'])
                 );
                 break;
+            case "doorPrivsDefaultSet":
             case "door privledges":
                 displayHelp(who, 'Room API - Door Privledges',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>This sets the default for who should be able to toggle doors. Setting it to '+ch("'")+'players'+ch("'")+' makes it that anybody can toggle doors. Setting it to '+ch("'")+'gm'+ch("'")+' makes it that only GMs can toggle them.</p>'
                         +'<p>This can be overridden on individual doors (such as a door that is locked) by double clicking the door and changing the '+ch("'")+'Controlled By'+ch("'")+' settings.</p>'
-                        +commandLink('set it to gm','doorPrivsDefaultSet gm')
-                        +commandLink('set it to players','doorPrivsDefaultSet players')
+                        +(stateOptionsDoorPrivs())
                     +'</div>'
                 );
                 break;
@@ -2118,6 +2122,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
             + (state.APIRoomManagement.uiPreference == 0 
                 ? commandLink('set it to handout','uiPreference handout')
                 : commandLink('set it to chat','uiPreference chat'));
+        
+        return text;
+    },
+    
+    //helper function for ui preference options based on current state settings:
+    stateOptionsDoorPrivs = function() {
+        var text = 
+            '<p>Default door privledges are currently set to <u><b>'
+            + (state.APIRoomManagement.doorPrivsDefault == 0 ? 'gm' : 'players')
+            +'</b></u>.</p>'
+            + (state.APIRoomManagement.doorPrivsDefault == 0 
+                ? commandLink('set it to players','doorPrivsDefaultSet players')
+                : commandLink('set it to gm','doorPrivsDefaultSet gm'));
         
         return text;
     },
