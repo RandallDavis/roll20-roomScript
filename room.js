@@ -1793,12 +1793,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             if(validateSelections(msg, ['empty'])) {
                                 switch(chatCommand[2]) {
                                     case 'open':
-                                        createManagedToken(msg, 'adhocDoorOpen');
-                                        //TODO: confirm
+                                        if(createManagedToken(msg, 'adhocDoorOpen')) {
+                                            followUpAction['message'] = 'Adhoc door successfully created.';
+                                        } else {
+                                            followUpAction['message'] = 'Adhoc door creation attempted, but there were problems.';
+                                        }
                                         break;
                                     case 'closed':
-                                        createManagedToken(msg, 'adhocDoorClosed');
-                                        //TODO: confirm
+                                        if(createManagedToken(msg, 'adhocDoorClosed')) {
+                                            followUpAction['message'] = 'Adhoc door successfully created.';
+                                        } else {
+                                            followUpAction['message'] = 'Adhoc door creation attempted, but there were problems.';
+                                        }
                                         break;
                                     default:
                                         help(msg.who, 'adhocDoorAdd');
@@ -1808,8 +1814,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         } else if(chatCommand.length == 2) {
                             //if there is no parameter, then this is appending a second door to an adhoc door set:
                             if(validateSelections(msg, ['empty', 'adhocDoor'])) {
-                                createManagedToken(msg, 'adhocDoorCompanion');
-                                //TODO: confirm
+                                if(createManagedToken(msg, 'adhocDoorCompanion')) {
+                                    followUpAction['message'] = 'Adhoc door set successfully created.';
+                                } else {
+                                    followUpAction['message'] = 'Adhoc door set creation attempted, but there were problems.';
+                                }
                             }
                         } else {
                             help(msg.who, 'adhocDoorAdd');
