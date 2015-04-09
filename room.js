@@ -1578,16 +1578,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(setting) {
             case 'chat':
                 state.APIRoomManagement.uiPreference = 0;
-                sendWhisper(who, 'UI will output to chat window.');
                 break;
             case 'handout':
                 state.APIRoomManagement.uiPreference = 1;
-                sendWhisper(who, 'UI will output to a handout.');
                 break;
             default:
                 sendWhisper(who, "Unexpected setting of '" + setting + "'. The expected values are 'chat' or 'handout'.");
-                break;
+                return false;
         }
+        
+        return true;
     },
     
     setAdhocDoorMoveMode = function(mode) {
@@ -1871,10 +1871,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     case 'uiPreference':
                         if(chatCommand.length != 3) {
-                            help(msg.who, 'uiPreference'); //TODO: implement this - done already?
+                            help(msg.who, 'uiPreference');
                         } else {
-                            setUiPreference(msg.who, chatCommand[2]);
-                            //TODO: refresh with state
+                            if(setUiPreference(msg.who, chatCommand[2])) {
+                                //return to the specific refreshed help topic:
+                                help(msg.who, 'uiPreference');
+                            } else {
+                                followUpAction['message'] = 'There were problems updating the UI preference.';
+                            }
                         }
                         break;
                     case "toggleDoorLock":
@@ -2046,14 +2050,14 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>'
                 );
                 break;
+            case "uiPreference":
             case "ui preference":
                 displayHelp(who, 'Room API - UI Preferences',
                     '<div style="padding-left:10px;margin-bottom:3px;">'
                         +'<p>Sets where user interface (UI) commands should be sent.</p>'
                         +'<p>If this is set to '+ch("'")+'handout'+ch("'")+', it will appear in a handout called '+ch("'")+'API-RoomManagement'+ch("'")+'.</p>'
                         +'<p>Actions in the handout are not functional if the handout is popped out.</p>'
-                        +commandLink('set it to chat','uiPreference chat')
-                        +commandLink('set it to handout','uiPreference handout')
+                        +(stateOptionsUiPreference())
                     +'</div>'
                 );
                 break;
@@ -2103,6 +2107,19 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 );
                 break;
         }
+    },
+    
+    //helper function for ui preference options based on current state settings:
+    stateOptionsUiPreference = function() {
+        var text = 
+            '<p>UI preference is currently set to <u><b>'
+            + (state.APIRoomManagement.uiPreference == 0 ? 'chat' : 'handout')
+            +'</b></u>.</p>'
+            + (state.APIRoomManagement.uiPreference == 0 
+                ? commandLink('set it to handout','uiPreference handout')
+                : commandLink('set it to chat','uiPreference chat'));
+        
+        return text;
     },
     
     //intuitive command interface for handling an empty image:
