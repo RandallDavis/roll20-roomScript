@@ -551,9 +551,13 @@ var APIRoomManagement = APIRoomManagement || (function() {
     };
     
     door.prototype.toggleLock = function() {
-        this.load();
+        var success = true;
+        
+        success = success && this.load();
         this.setProperty('locked', !this.getProperty('locked'));
         this.save();
+        
+        return success;
     };
     
     inheritPrototype(roomDoor, door);
@@ -1338,7 +1342,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     toggleDoorLock = function(msg) {
         var door = getManagedTokenById(msg.selected[0]._id);
-        door.toggleLock();
+        return door.toggleLock();
     },
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
@@ -1875,8 +1879,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     case "toggleDoorLock":
                         if(validateSelections(msg, ['door'])) {
-                            toggleDoorLock(msg);
-                            //TODO: refresh (state already implemented)
+                            if(toggleDoorLock(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Toggling the door'+ch("'")+'s lock was unsuccessful.';
+                            }
                         }
                         break;
                     /*case "toggleDoorTrap":
