@@ -1541,16 +1541,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
         switch(doorType) {
             case 'doorClosed':
                 state.APIRoomManagement.doorClosedPicUrl = imgsrc;
-                sendWhisper(msg.who, 'Closed door image set.');
                 break;
             case 'doorOpen': 
                 state.APIRoomManagement.doorOpenPicUrl = imgsrc;
-                sendWhisper(msg.who, 'Open door image set.');
                 break;
             default:
                 log('Unknown type ' + doorType + ' in setDoorUrl.');
-                break;
+                return false;
         }
+        
+        return true;
     },
     
     //set default for players being able to control doors:
@@ -1747,12 +1747,18 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             if(validateSelections(msg, ['empty'])) {
                                 switch(chatCommand[2]) {
                                     case "open":
-                                        setDoorUrl(msg, 'doorOpen');
-                                        //TODO: confirm refactor
+                                        if(setDoorUrl(msg, 'doorOpen')) {
+                                            followUpAction['message'] = 'Open door image successfully set.';
+                                        } else {
+                                            followUpAction['message'] = 'Open door image setting was unsuccessful.';
+                                        }
                                         break;
                                     case "closed":
-                                        setDoorUrl(msg, 'doorClosed');
-                                        //TODO: confirm refactor
+                                        if(setDoorUrl(msg, 'doorClosed')) {
+                                           followUpAction['message'] = 'Closed door image successfully set.';
+                                        } else {
+                                            followUpAction['message'] = 'Closed door image setting was unsuccessful.';
+                                        }
                                         break;
                                     default:
                                         help(msg.who, 'roomDoorImageSet');
