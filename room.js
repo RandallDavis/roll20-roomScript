@@ -1699,6 +1699,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         if(validateSelections(msg, ['empty'])) {
                             if(createManagedToken(msg, 'room')) {
                                 followUpAction['message'] = 'Room successfully created.';
+                            } else {
+                                followUpAction['message'] = 'Room creation attempted, but there were problems.';
                             }
                         }
                         break;
@@ -1769,14 +1771,20 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         break;
                     case 'adhocWallAdd':
                         if(validateSelections(msg, ['empty'])) {
-                            createManagedToken(msg, 'adhocWall');
-                            //TODO: confirm
+                            if(createManagedToken(msg, 'adhocWall')) {
+                                followUpAction['message'] = 'Adhoc wall successfully created.';
+                            } else {
+                                followUpAction['message'] = 'Adhoc wall creation attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'adhocWallRemove':
                         if(validateSelections(msg, ['adhocWall'])) {
-                            destroyManagedToken(msg);
-                            //TODO: confirm
+                            if(destroyManagedToken(msg)) {
+                                followUpAction['message'] = 'Adhoc wall successfully removed.';
+                            } else {
+                                followUpAction['message'] = 'Adhoc wall remove attempted, but there were problems.';
+                            }
                         }
                         break;
                     case 'adhocDoorAdd':
