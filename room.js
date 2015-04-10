@@ -2,7 +2,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.31,
+    var version = 3.4,
         schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
@@ -27,6 +27,17 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 doorPrivsDefault: 1, //0 = gm only, 1 = all players
                 uiPreference: 0 //0 = chat, 1 = handout
             };
+        }
+        
+        //reset the handout:
+        if(state.APIRoomManagement.uiPreference == 1) {
+            displayHelp(null, 'Room API - Welcome',
+                '<div style="padding-left:10px;margin-bottom:3px;">'
+                    +'<p>Click below to get started!</p>'
+                +'</div>',
+                
+                commandLinks('Standard',[['run script',''],['help','help']])
+            );
         }
     },
     
