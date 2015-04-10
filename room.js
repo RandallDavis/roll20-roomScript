@@ -2,7 +2,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.3,
+    var version = 3.31,
         schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
@@ -10,6 +10,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         buttonBackgroundColor = '#E92862',
         mainBackgroundColor = '#3D8FE1',
         headerBackgroundColor = '#386EA5',
+        notificationBackgroundColor = '#64EED7',
         
     checkInstall = function() {
         
@@ -1654,7 +1655,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
     },
     
     sendWhisper = function(to, message) {
-        sendChat('Room API', '/w ' + to.split(' ')[0] + ' ' + message);  
+        displayHelp(to.split(' ')[0],
+            'Room API - Notification',
+            '<span style="text-align:center;padding-left:3px;display:inline-block;width: 100%;margin-top:3px;margin-bottom:3px;">'
+                +'<span style="padding-left:13px;padding-top:13px;padding-right:13px;display:inline-block;background-color:'+notificationBackgroundColor+';margin-top:13px;margin-left:13px;margin-right:13px;margin-bottom:3px;">'
+                    +'<p>'+message+'</p>'
+                +'</span>'
+            +'</span>',
+            
+            commandLinks('standard',[['run script',''],['help','help']])
+        );
     },
     
     handleUserInput = function(msg) {
@@ -2019,6 +2029,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>',
                      
                     helpLinks('Sub-topics',['door privledges'])
+                    +commandLinks('Standard',[['run script',''],['help','help']])
                 );
                 break;
             case "doorPrivsDefaultSet":
@@ -2028,7 +2039,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>This sets the default for who should be able to toggle doors. Setting it to '+ch("'")+'players'+ch("'")+' makes it that anybody can toggle doors. Setting it to '+ch("'")+'gm'+ch("'")+' makes it that only GMs can toggle them.</p>'
                         +'<p>This can be overridden on individual doors (such as a door that is locked) by double clicking the door and changing the '+ch("'")+'Controlled By'+ch("'")+' settings.</p>'
                         +(stateOptionsDoorPrivs())
-                    +'</div>'
+                    +'</div>',
+                    
+                    commandLinks('Standard',[['run script',''],['help','help']])
                 );
                 break;
             case "uiPreference":
@@ -2039,7 +2052,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>If this is set to '+ch("'")+'handout'+ch("'")+', it will appear in a handout called '+ch("'")+'API-RoomManagement'+ch("'")+'.</p>'
                         +'<p>Actions in the handout are not functional if the handout is popped out.</p>'
                         +(stateOptionsUiPreference())
-                    +'</div>'
+                    +'</div>',
+                    
+                    commandLinks('Standard',[['run script',''],['help','help']])
                 );
                 break;
             case "adhoc":
@@ -2052,6 +2067,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>',
                     
                     helpLinks('Sub-topics',['adhoc walls','adhoc doors'])
+                    +commandLinks('Standard',[['run script',''],['help','help']])
                 );
                 break;
             case "adhoc walls":
@@ -2060,7 +2076,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         +'<p>To add an adhoc wall, select an empty image and run <b>!api-room</b>.</p>'
                         +'<p>As soon as the image becomes an adhoc wall, it is pushed to the Maps layer as a convenience and is from then on managed by the API. It can be moved back to other layers without doing any harm, if that'+ch("'")+'s more to your liking.</p>'
                         +'<p>A LoS wall will be drawn through the length of the wall.</p>'
-                    +'</div>'
+                    +'</div>',
+                    
+                    commandLinks('Standard',[['run script',''],['help','help']])
                 );
                 break;
             case "adhocDoorMove":
@@ -2076,6 +2094,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>',
                      
                     helpLinks('Sub-topics',['door privledges'])
+                    +commandLinks('Standard',[['run script',''],['help','help']])
                 );
                 break;
             default:
@@ -2086,6 +2105,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                     +'</div>',
                     
                     helpLinks('Sub-topics',['rooms','adhoc walls and doors','ui preference'])
+                    +commandLinks('Standard',[['run script',''],['help','help']])
                 );
                 break;
         }
@@ -2141,8 +2161,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         ['set open door default image','roomDoorImageSet open'],
                         ['set closed door default image','roomDoorImageSet closed']
                     ])
-                +commandLinks('Help',[['help','help']])
-            +'</div>'
+            +'</div>',
+            
+            commandLinks('Standard',[['run script',''],['help','help']])
         );
     },
     
@@ -2179,10 +2200,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Top Side',intuitRoomSide(sides, 't'))
                 +commandLinks('Right Side',intuitRoomSide(sides, 'r'))
                 +commandLinks('Bottom Side',intuitRoomSide(sides, 'b'))
-                +commandLinks('Help',[['help','help']])
             +'</div>';
+            
+        var nextSteps =
+            commandLinks('Standard',[['run script',''],['help','help']])
         
-        displayHelp(who, 'Room Actions', body);
+        displayHelp(who, 'Room Actions', body, nextSteps);
     },
     
     //helper function for intuiting features of an adhoc or room door:
@@ -2200,10 +2223,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Features',intuitDoorFeatures(door))
-                +commandLinks('Help',[['help','help']])
             +'</div>';
+            
+        var nextSteps =
+            commandLinks('Standard',[['run script',''],['help','help']])
         
-        displayHelp(who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body, nextSteps);
     },
     
     //intuitive command interface for handling an adhoc door:
@@ -2215,10 +2240,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 +commandLinks('Adhoc Door',[['remove','adhocDoorRemove']])
                 +commandLinks('Features',intuitDoorFeatures(door))
                 +helpLinks('Move Mode (affects all adhoc doors)',['move mode'])
-                +commandLinks('Help',[['help','help']])
             +'</div>';
+        
+        var nextSteps =
+            commandLinks('Standard',[['run script',''],['help','help']])
             
-        displayHelp(who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body, nextSteps);
     },
     
     //intuitive command interface for handling an adhoc wall:
@@ -2226,10 +2253,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Wall',[['remove','adhocWallRemove']])
-                +commandLinks('Help',[['help','help']])
             +'</div>';
+            
+        var nextSteps =
+            commandLinks('Standard',[['run script',''],['help','help']])
         
-        displayHelp(who, 'Adhoc Wall Actions', body);
+        displayHelp(who, 'Adhoc Wall Actions', body, nextSteps);
     },
     
     //intuitive command interface for handling an adhoc door and an empty image:
@@ -2237,10 +2266,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var body = 
             '<div style="padding-left:10px;margin-bottom:3px;">'
                 +commandLinks('Adhoc Door',[['complete set','adhocDoorAdd']])
-                +commandLinks('Help',[['help','help']])
             +'</div>';
+            
+        var nextSteps =
+            commandLinks('Standard',[['run script',''],['help','help']])
         
-        displayHelp(who, 'Adhoc Door Actions', body);
+        displayHelp(who, 'Adhoc Door Actions', body, nextSteps);
     },
     
     //intuitive command interface that presents wizard-like options based on context:
