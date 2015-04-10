@@ -1406,7 +1406,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             topMid : {
                 x : 0,
                 y : 0
-        	},
+            },
     		topRight : {
     			x : 0,
     			y : 0
@@ -1641,7 +1641,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     displayUi = function(who, text) {
         if(state.APIRoomManagement.uiPreference === 0) {
-            sendWhisper(who, text);
+            sendChat('Room API', '/w ' + who.split(' ')[0] + ' ' + text); 
         } else {
             var handout = findObjs({                              
                 _type: 'handout',
