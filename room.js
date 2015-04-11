@@ -732,7 +732,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             if(newActiveDoor) {
                 newActiveDoorToken = newActiveDoor.getProperty('token');
             
-                //visual alert:
+                //toggle visual alert:
                 setTimeout(
                     APIVisualAlert.visualAlert(
                         newSideType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
@@ -961,15 +961,31 @@ var APIRoomManagement = APIRoomManagement || (function() {
             token.set('top', parseInt(this.getProperty('positionTop')));
             token.set('layer', this.getProperty('token').get('layer'));
             
-            //visual alert:
+            //locked visual alert:
             setTimeout(
                 APIVisualAlert.visualAlert(
                     padlockAlertPic,
                     token.get('left'),
                     token.get('top'),
                     1.0,
-                    2),
+                    1),
                 5);
+                
+            //handle interactive trap:
+            if(this.getProperty('trappedInteract')) {
+                this.setProperty('trappedInteract', false);
+                this.save();
+                
+                //trap visual alert:
+                setTimeout(
+                    APIVisualAlert.visualAlert(
+                        skullAlertPic,
+                        token.get('left'),
+                        token.get('top'),
+                        1.0,
+                        2),
+                    5);
+            }
         } else {
             var companionDoor = this.getProperty('companionDoor');
             
@@ -992,7 +1008,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 companionDoor.save();
                 companionDoor.draw();
                 
-                //visual alert:
+                //toggle visual alert:
                 setTimeout(
                     APIVisualAlert.visualAlert(
                         companionDoorDoorType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
@@ -1001,6 +1017,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         1.0,
                         0), //don't blink
                     5);
+                    
+                //detonate traps:
+                if(this.getProperty('trappedToggle') || this.getProperty('trappedInteract')) {
+                    this.load();
+                    this.setProperty('trappedToggle', false);
+                    this.setProperty('trappedInteract', false);
+                    this.save();
+                    
+                    //trap visual alert:
+                    setTimeout(
+                        APIVisualAlert.visualAlert(
+                            skullAlertPic,
+                            companionDoorToken.get('left'),
+                            companionDoorToken.get('top'),
+                            1.0,
+                            1),
+                        5);
+                }
             }
         }
     };
