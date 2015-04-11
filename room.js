@@ -2,11 +2,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.4,
+    var version = 3.5,
         schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
+        skullAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8779089/aM1ujMQboacuc2fEMFk7Eg/thumb.png?1428784948',
         buttonBackgroundColor = '#E92862',
         mainBackgroundColor = '#3D8FE1',
         headerBackgroundColor = '#386EA5',
@@ -674,15 +675,31 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(this.getProperty('locked')) {
             room.draw();
             
-            //visual alert:
+            //locked visual alert:
             setTimeout(
                 APIVisualAlert.visualAlert(
                     padlockAlertPic,
                     token.get('left'),
                     token.get('top'),
                     1.0,
-                    2),
+                    1),
                 5);
+                
+            //handle interactive trap:
+            if(this.getProperty('trappedInteract')) {
+                this.setProperty('trappedInteract', false);
+                this.save();
+                
+                //trap visual alert:
+                setTimeout(
+                    APIVisualAlert.visualAlert(
+                        skullAlertPic,
+                        token.get('left'),
+                        token.get('top'),
+                        1.0,
+                        2),
+                    5);
+            }
         } else {
             //find the roomSide that the door is on:
             var side;
@@ -724,6 +741,23 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         1.0,
                         0), //don't blink
                     5);
+                
+                //detonate traps:
+                if(this.getProperty('trappedToggle') || this.getProperty('trappedInteract')) {
+                    this.setProperty('trappedToggle', false);
+                    this.setProperty('trappedInteract', false);
+                    this.save();
+                    
+                    //trap visual alert:
+                    setTimeout(
+                        APIVisualAlert.visualAlert(
+                            skullAlertPic,
+                            newActiveDoorToken.get('left'),
+                            newActiveDoorToken.get('top'),
+                            1.0,
+                            1),
+                        5);
+                }
             }
         }
     };
