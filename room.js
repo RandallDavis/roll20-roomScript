@@ -568,6 +568,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var success = true;
         
         success = success && this.load();
+        
+        //unlocking a door pushes an interactive trap to a toggle trap:
+        if(this.getProperty('locked') && this.getProperty('trappedInteract')) {
+            success = success && this.toggleTrapToggle();
+        }
+        
         this.setProperty('locked', !this.getProperty('locked'));
         this.save();
         
@@ -2289,10 +2295,41 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //helper function for intuiting features of an adhoc or room door:
     intuitDoorFeatures = function(door) {
-        return [
-                [(door.getProperty('locked') ? 'unlock' : 'lock'),'toggleDoorLock'],
-                //['trap','toggleDoorTrap']
-            ];
+        var doorFeatures = new Array();
+        
+        if(door.getProperty('locked')) {
+            if(door.getProperty('trappedToggle')) {
+                doorFeatures.push(['unlock','toggleDoorLock']);
+                doorFeatures.push(['change trap to interaction','toggleDoorTrapInteract']);
+            } else if(door.getProperty('trappedInteract')) {
+                doorFeatures.push(['unlock and change trap to movement','toggleDoorLock']);
+                doorFeatures.push(['change trap to movement','toggleDoorTrapToggle']);
+            } else {
+                doorFeatures.push(['unlock','toggleDoorLock']);
+                doorFeatures.push(['set movement trap','toggleDoorTrapToggle']);
+                doorFeatures.push(['set interaction trap','toggleDoorTrapInteract']);
+            }
+        } else {
+            doorFeatures.push(['lock','toggleDoorLock']);
+            
+            if(!door.getProperty('trappedToggle')) {
+                doorFeatures.push(['set movement trap','toggleDoorTrapToggle']);
+            }
+        }
+        
+        if(door.getProperty('trappedToggle')) {
+            doorFeatures.push(['disarm movement trap','toggleDoorTrapToggle']);
+        }
+        
+        if(door.getProperty('trappedInteract')) {
+            doorFeatures.push(['disarm interaction trap','toggleDoorTrapInteract']);
+        }
+        
+        if(door.getProperty('trappedToggle') || door.getProperty('trappedInteract')) {
+            doorFeatures.push(['detonate trap','detonateTrap']);
+        }
+        
+        return doorFeatures;
     },
     
     //intuitive command interface for handling a room door:
@@ -2307,7 +2344,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var nextSteps =
             commandLinks('Standard',[['run script',''],['help','help']])
         
-        displayHelp(who, 'Adhoc Door Actions', body, nextSteps);
+        displayHelp(who, 'Room Door Actions', body, nextSteps);
     },
     
     //intuitive command interface for handling an adhoc door:
