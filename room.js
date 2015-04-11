@@ -554,6 +554,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case 'doorType':
             case 'companionDoor':
             case 'locked':
+            case 'trappedToggle':
+            case 'trappedInteract':
                 this['_' + property] = value;
                 break;
             default:
@@ -597,6 +599,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(metaFeature) {
             metaFeature = metaFeature[0].substring(3).split('.');
             this.setProperty('locked', metaFeature[0] == '1');
+            this.setProperty('trappedToggle', metaFeature[1] == '1');
+            this.setProperty('trappedInteract', metaFeature[2] == '1');
         }
         
         return true;
@@ -615,7 +619,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 + saveBlank(roomId)
                 + '*%3Cbr%3E'
             + '*f*'
-                + (this.getProperty('locked') ? '1' : '')
+                + (this.getProperty('locked') ? '1' : '') + '.'
+                + (this.getProperty('trappedToggle') ? '1' : '') + '.'
+                + (this.getProperty('trappedInteract') ? '1' : '')
                 + '*%3Cbr%3E';
         this.getProperty('token').set('gmnotes', newGmNotes);
     };
@@ -758,6 +764,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(metaFeature) {
             metaFeature = metaFeature[0].substring(3).split('.');
             this.setProperty('locked', metaFeature[0] == '1');
+            this.setProperty('trappedToggle', metaFeature[1] == '1');
+            this.setProperty('trappedInteract', metaFeature[2] == '1');
         }
         
         return true;
@@ -781,8 +789,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var newGmNotes = 
             '*adhocDoor*%3Cbr%3E'
             + '*d*' 
-                + saveBlank(this.getProperty('doorType')) + '.' 
-                + saveBlank(companionDoorId) + '.' 
+                + saveBlank(this.getProperty('doorType')) + '.'
+                + saveBlank(companionDoorId) + '.'
                 + saveBlank(wallId)
                 + '*%3Cbr%3E'
             + '*z*' 
@@ -793,7 +801,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 + token.get('top') 
                 + '*%3Cbr%3E'
             + '*f*'
-                + (this.getProperty('locked') ? '1' : '')
+                + (this.getProperty('locked') ? '1' : '') + '.'
+                + (this.getProperty('trappedToggle') ? '1' : '') + '.'
+                + (this.getProperty('trappedInteract') ? '1' : '')
                 + '*%3Cbr%3E';
         token.set('gmnotes', newGmNotes);
     };
