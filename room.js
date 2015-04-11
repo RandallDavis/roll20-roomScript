@@ -574,6 +574,40 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return success;
     };
     
+    door.prototype.toggleTrapToggle = function() {
+        var success = true;
+        
+        success = success && this.load();
+        
+        this.setProperty('trappedToggle', !this.getProperty('trappedToggle'));
+        
+        //traps are mutually exclusive:
+        if(this.getProperty('trappedToggle')) {
+            this.setProperty('trappedInteract', false);
+        }
+        
+        this.save();
+        
+        return success;
+    };
+    
+    door.prototype.toggleTrapInteract = function() {
+        var success = true;
+        
+        success = success && this.load();
+        
+        this.setProperty('trappedInteract', !this.getProperty('trappedInteract'));
+        
+        //traps are mutually exclusive:
+        if(this.getProperty('trappedInteract')) {
+            this.setProperty('trappedToggle', false);
+        }
+        
+        this.save();
+        
+        return success;
+    };
+    
     inheritPrototype(roomDoor, door);
     
     roomDoor.prototype.setProperty = function(property, value) {
@@ -1367,6 +1401,16 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return door.toggleLock();
     },
     
+    toggleDoorTrapToggle = function(msg) {
+        var door = getManagedTokenById(msg.selected[0]._id);
+        return door.toggleTrapToggle();
+    },
+    
+    toggleDoorTrapInteract = function(msg) {
+        var door = getManagedTokenById(msg.selected[0]._id);
+        return door.toggleTrapInteract();
+    },
+    
     //creates a dynamic lighting segment from A to B on the parent's page: 
     createLosWall = function(parent, pointA, pointB) {
         var isPositiveSlope = (((pointB.y - pointA.y) === 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) >= 0));
@@ -1902,10 +1946,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         }
                         break;
-                    /*case "toggleDoorTrap":
-                        //TODO:
-                        sendWhisper(msg.who, "not implemented yet");
-                        break;*/
+                    case "toggleDoorTrapToggle":
+                        if(validateSelections(msg, ['door'])) {
+                            if(toggleDoorTrapToggle(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Toggling the door'+ch("'")+'s trap was unsuccessful.';
+                            }
+                        }
+                        break;
+                    case "toggleDoorTrapInteract":
+                        if(validateSelections(msg, ['door'])) {
+                            if(toggleDoorTrapInteract(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Toggling the door'+ch("'")+'s trap was unsuccessful.';
+                            }
+                        }
+                        break;
                     default:
                         help(msg.who, '');
                         break;
