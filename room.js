@@ -2,11 +2,12 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     /* core - begin */
     
-    var version = 3.4,
+    var version = 3.5,
         schemaVersion = 0.41,
         closedDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543193/5XhwOpMaBUS_5B444UNC5Q/thumb.png?1427665106',
         openDoorAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8543205/QBOWp1MHHlJCrPWn9kcVqQ/thumb.png?1427665124',
         padlockAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8546285/bdyuCfZSGRXr3qrVkcPkAg/thumb.png?1427673372',
+        skullAlertPic = 'https://s3.amazonaws.com/files.d20.io/images/8779089/aM1ujMQboacuc2fEMFk7Eg/thumb.png?1428784948',
         buttonBackgroundColor = '#E92862',
         mainBackgroundColor = '#3D8FE1',
         headerBackgroundColor = '#386EA5',
@@ -554,6 +555,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
             case 'doorType':
             case 'companionDoor':
             case 'locked':
+            case 'trappedToggle':
+            case 'trappedInteract':
                 this['_' + property] = value;
                 break;
             default:
@@ -566,9 +569,72 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var success = true;
         
         success = success && this.load();
+        
+        //unlocking a door pushes an interactive trap to a toggle trap:
+        if(this.getProperty('locked') && this.getProperty('trappedInteract')) {
+            success = success && this.toggleTrapToggle();
+        }
+        
         this.setProperty('locked', !this.getProperty('locked'));
         this.save();
         
+        return success;
+    };
+    
+    door.prototype.toggleTrapToggle = function() {
+        var success = true;
+        
+        success = success && this.load();
+        
+        this.setProperty('trappedToggle', !this.getProperty('trappedToggle'));
+        
+        //traps are mutually exclusive:
+        if(this.getProperty('trappedToggle')) {
+            this.setProperty('trappedInteract', false);
+        }
+        
+        this.save();
+        
+        return success;
+    };
+    
+    door.prototype.toggleTrapInteract = function() {
+        var success = true;
+        
+        success = success && this.load();
+        
+        this.setProperty('trappedInteract', !this.getProperty('trappedInteract'));
+        
+        //traps are mutually exclusive:
+        if(this.getProperty('trappedInteract')) {
+            this.setProperty('trappedToggle', false);
+        }
+        
+        this.save();
+        
+        return success;
+    };
+    
+    door.prototype.detonateTrap = function() {
+        var success = true;
+        
+        success = success && this.load();
+        this.setProperty('trappedToggle', false);
+        this.setProperty('trappedInteract', false);
+        this.save();
+        
+        var token = this.getProperty('token');
+        
+        //trap visual alert:
+        setTimeout(
+            APIVisualAlert.visualAlert(
+                skullAlertPic,
+                token.get('left'),
+                token.get('top'),
+                1.0,
+                2),
+            5);
+            
         return success;
     };
     
@@ -597,6 +663,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(metaFeature) {
             metaFeature = metaFeature[0].substring(3).split('.');
             this.setProperty('locked', metaFeature[0] == '1');
+            this.setProperty('trappedToggle', metaFeature[1] == '1');
+            this.setProperty('trappedInteract', metaFeature[2] == '1');
         }
         
         return true;
@@ -615,7 +683,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 + saveBlank(roomId)
                 + '*%3Cbr%3E'
             + '*f*'
-                + (this.getProperty('locked') ? '1' : '')
+                + (this.getProperty('locked') ? '1' : '') + '.'
+                + (this.getProperty('trappedToggle') ? '1' : '') + '.'
+                + (this.getProperty('trappedInteract') ? '1' : '')
                 + '*%3Cbr%3E';
         this.getProperty('token').set('gmnotes', newGmNotes);
     };
@@ -628,15 +698,31 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(this.getProperty('locked')) {
             room.draw();
             
-            //visual alert:
+            //locked visual alert:
             setTimeout(
                 APIVisualAlert.visualAlert(
                     padlockAlertPic,
                     token.get('left'),
                     token.get('top'),
                     1.0,
-                    2),
+                    1),
                 5);
+                
+            //handle interactive trap:
+            if(this.getProperty('trappedInteract')) {
+                this.setProperty('trappedInteract', false);
+                this.save();
+                
+                //trap visual alert:
+                setTimeout(
+                    APIVisualAlert.visualAlert(
+                        skullAlertPic,
+                        token.get('left'),
+                        token.get('top'),
+                        1.0,
+                        2),
+                    5);
+            }
         } else {
             //find the roomSide that the door is on:
             var side;
@@ -669,7 +755,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
             if(newActiveDoor) {
                 newActiveDoorToken = newActiveDoor.getProperty('token');
             
-                //visual alert:
+                //toggle visual alert:
                 setTimeout(
                     APIVisualAlert.visualAlert(
                         newSideType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
@@ -678,6 +764,23 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         1.0,
                         0), //don't blink
                     5);
+                
+                //detonate traps:
+                if(this.getProperty('trappedToggle') || this.getProperty('trappedInteract')) {
+                    this.setProperty('trappedToggle', false);
+                    this.setProperty('trappedInteract', false);
+                    this.save();
+                    
+                    //trap visual alert:
+                    setTimeout(
+                        APIVisualAlert.visualAlert(
+                            skullAlertPic,
+                            newActiveDoorToken.get('left'),
+                            newActiveDoorToken.get('top'),
+                            1.0,
+                            1),
+                        5);
+                }
             }
         }
     };
@@ -758,6 +861,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         if(metaFeature) {
             metaFeature = metaFeature[0].substring(3).split('.');
             this.setProperty('locked', metaFeature[0] == '1');
+            this.setProperty('trappedToggle', metaFeature[1] == '1');
+            this.setProperty('trappedInteract', metaFeature[2] == '1');
         }
         
         return true;
@@ -781,8 +886,8 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var newGmNotes = 
             '*adhocDoor*%3Cbr%3E'
             + '*d*' 
-                + saveBlank(this.getProperty('doorType')) + '.' 
-                + saveBlank(companionDoorId) + '.' 
+                + saveBlank(this.getProperty('doorType')) + '.'
+                + saveBlank(companionDoorId) + '.'
                 + saveBlank(wallId)
                 + '*%3Cbr%3E'
             + '*z*' 
@@ -793,7 +898,9 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 + token.get('top') 
                 + '*%3Cbr%3E'
             + '*f*'
-                + (this.getProperty('locked') ? '1' : '')
+                + (this.getProperty('locked') ? '1' : '') + '.'
+                + (this.getProperty('trappedToggle') ? '1' : '') + '.'
+                + (this.getProperty('trappedInteract') ? '1' : '')
                 + '*%3Cbr%3E';
         token.set('gmnotes', newGmNotes);
     };
@@ -877,15 +984,31 @@ var APIRoomManagement = APIRoomManagement || (function() {
             token.set('top', parseInt(this.getProperty('positionTop')));
             token.set('layer', this.getProperty('token').get('layer'));
             
-            //visual alert:
+            //locked visual alert:
             setTimeout(
                 APIVisualAlert.visualAlert(
                     padlockAlertPic,
                     token.get('left'),
                     token.get('top'),
                     1.0,
-                    2),
+                    1),
                 5);
+                
+            //handle interactive trap:
+            if(this.getProperty('trappedInteract')) {
+                this.setProperty('trappedInteract', false);
+                this.save();
+                
+                //trap visual alert:
+                setTimeout(
+                    APIVisualAlert.visualAlert(
+                        skullAlertPic,
+                        token.get('left'),
+                        token.get('top'),
+                        1.0,
+                        2),
+                    5);
+            }
         } else {
             var companionDoor = this.getProperty('companionDoor');
             
@@ -908,7 +1031,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                 companionDoor.save();
                 companionDoor.draw();
                 
-                //visual alert:
+                //toggle visual alert:
                 setTimeout(
                     APIVisualAlert.visualAlert(
                         companionDoorDoorType == 'doorClosed' ? closedDoorAlertPic : openDoorAlertPic,
@@ -917,6 +1040,24 @@ var APIRoomManagement = APIRoomManagement || (function() {
                         1.0,
                         0), //don't blink
                     5);
+                    
+                //detonate traps:
+                if(this.getProperty('trappedToggle') || this.getProperty('trappedInteract')) {
+                    this.load();
+                    this.setProperty('trappedToggle', false);
+                    this.setProperty('trappedInteract', false);
+                    this.save();
+                    
+                    //trap visual alert:
+                    setTimeout(
+                        APIVisualAlert.visualAlert(
+                            skullAlertPic,
+                            companionDoorToken.get('left'),
+                            companionDoorToken.get('top'),
+                            1.0,
+                            1),
+                        5);
+                }
             }
         }
     };
@@ -1355,6 +1496,21 @@ var APIRoomManagement = APIRoomManagement || (function() {
     toggleDoorLock = function(msg) {
         var door = getManagedTokenById(msg.selected[0]._id);
         return door.toggleLock();
+    },
+    
+    toggleDoorTrapToggle = function(msg) {
+        var door = getManagedTokenById(msg.selected[0]._id);
+        return door.toggleTrapToggle();
+    },
+    
+    toggleDoorTrapInteract = function(msg) {
+        var door = getManagedTokenById(msg.selected[0]._id);
+        return door.toggleTrapInteract();
+    },
+    
+    detonateTrap = function(msg) {
+        var door = getManagedTokenById(msg.selected[0]._id);
+        return door.detonateTrap();
     },
     
     //creates a dynamic lighting segment from A to B on the parent's page: 
@@ -1883,7 +2039,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         }
                         break;
-                    case "toggleDoorLock":
+                    case 'toggleDoorLock':
                         if(validateSelections(msg, ['door'])) {
                             if(toggleDoorLock(msg)) {
                                 followUpAction['refresh'] = true;
@@ -1892,10 +2048,33 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         }
                         break;
-                    /*case "toggleDoorTrap":
-                        //TODO:
-                        sendWhisper(msg.who, "not implemented yet");
-                        break;*/
+                    case 'toggleDoorTrapToggle':
+                        if(validateSelections(msg, ['door'])) {
+                            if(toggleDoorTrapToggle(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Toggling the door'+ch("'")+'s trap was unsuccessful.';
+                            }
+                        }
+                        break;
+                    case 'toggleDoorTrapInteract':
+                        if(validateSelections(msg, ['door'])) {
+                            if(toggleDoorTrapInteract(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Toggling the door'+ch("'")+'s trap was unsuccessful.';
+                            }
+                        }
+                        break;
+                    case 'detonateTrap':
+                        if(validateSelections(msg, ['door'])) {
+                            if(detonateTrap(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Detonating the trap was unsuccessful.';
+                            }
+                        }
+                        break;
                     default:
                         help(msg.who, '');
                         break;
@@ -2221,10 +2400,41 @@ var APIRoomManagement = APIRoomManagement || (function() {
     
     //helper function for intuiting features of an adhoc or room door:
     intuitDoorFeatures = function(door) {
-        return [
-                [(door.getProperty('locked') ? 'unlock' : 'lock'),'toggleDoorLock'],
-                //['trap','toggleDoorTrap']
-            ];
+        var doorFeatures = new Array();
+        
+        if(door.getProperty('locked')) {
+            if(door.getProperty('trappedToggle')) {
+                doorFeatures.push(['unlock','toggleDoorLock']);
+                doorFeatures.push(['change trap to interaction','toggleDoorTrapInteract']);
+            } else if(door.getProperty('trappedInteract')) {
+                doorFeatures.push(['unlock and change trap to movement','toggleDoorLock']);
+                doorFeatures.push(['change trap to movement','toggleDoorTrapToggle']);
+            } else {
+                doorFeatures.push(['unlock','toggleDoorLock']);
+                doorFeatures.push(['set movement trap','toggleDoorTrapToggle']);
+                doorFeatures.push(['set interaction trap','toggleDoorTrapInteract']);
+            }
+        } else {
+            doorFeatures.push(['lock','toggleDoorLock']);
+            
+            if(!door.getProperty('trappedToggle')) {
+                doorFeatures.push(['set movement trap','toggleDoorTrapToggle']);
+            }
+        }
+        
+        if(door.getProperty('trappedToggle')) {
+            doorFeatures.push(['disarm movement trap','toggleDoorTrapToggle']);
+        }
+        
+        if(door.getProperty('trappedInteract')) {
+            doorFeatures.push(['disarm interaction trap','toggleDoorTrapInteract']);
+        }
+        
+        if(door.getProperty('trappedToggle') || door.getProperty('trappedInteract')) {
+            doorFeatures.push(['detonate trap','detonateTrap']);
+        }
+        
+        return doorFeatures;
     },
     
     //intuitive command interface for handling a room door:
@@ -2239,7 +2449,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
         var nextSteps =
             commandLinks('Standard',[['run script',''],['help','help']])
         
-        displayHelp(who, 'Adhoc Door Actions', body, nextSteps);
+        displayHelp(who, 'Room Door Actions', body, nextSteps);
     },
     
     //intuitive command interface for handling an adhoc door:
