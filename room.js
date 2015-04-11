@@ -615,6 +615,29 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return success;
     };
     
+    door.prototype.detonateTrap = function() {
+        var success = true;
+        
+        success = success && this.load();
+        this.setProperty('trappedToggle', false);
+        this.setProperty('trappedInteract', false);
+        this.save();
+        
+        var token = this.getProperty('token');
+        
+        //trap visual alert:
+        setTimeout(
+            APIVisualAlert.visualAlert(
+                skullAlertPic,
+                token.get('left'),
+                token.get('top'),
+                1.0,
+                2),
+            5);
+            
+        return success;
+    };
+    
     inheritPrototype(roomDoor, door);
     
     roomDoor.prototype.setProperty = function(property, value) {
@@ -1485,6 +1508,11 @@ var APIRoomManagement = APIRoomManagement || (function() {
         return door.toggleTrapInteract();
     },
     
+    detonateTrap = function(msg) {
+        var door = getManagedTokenById(msg.selected[0]._id);
+        return door.detonateTrap();
+    },
+    
     //creates a dynamic lighting segment from A to B on the parent's page: 
     createLosWall = function(parent, pointA, pointB) {
         var isPositiveSlope = (((pointB.y - pointA.y) === 0) || (((pointB.x - pointA.x) / (pointB.y - pointA.y)) >= 0));
@@ -2011,7 +2039,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         }
                         break;
-                    case "toggleDoorLock":
+                    case 'toggleDoorLock':
                         if(validateSelections(msg, ['door'])) {
                             if(toggleDoorLock(msg)) {
                                 followUpAction['refresh'] = true;
@@ -2020,7 +2048,7 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         }
                         break;
-                    case "toggleDoorTrapToggle":
+                    case 'toggleDoorTrapToggle':
                         if(validateSelections(msg, ['door'])) {
                             if(toggleDoorTrapToggle(msg)) {
                                 followUpAction['refresh'] = true;
@@ -2029,12 +2057,21 @@ var APIRoomManagement = APIRoomManagement || (function() {
                             }
                         }
                         break;
-                    case "toggleDoorTrapInteract":
+                    case 'toggleDoorTrapInteract':
                         if(validateSelections(msg, ['door'])) {
                             if(toggleDoorTrapInteract(msg)) {
                                 followUpAction['refresh'] = true;
                             } else {
                                 followUpAction['message'] = 'Toggling the door'+ch("'")+'s trap was unsuccessful.';
+                            }
+                        }
+                        break;
+                    case 'detonateTrap':
+                        if(validateSelections(msg, ['door'])) {
+                            if(detonateTrap(msg)) {
+                                followUpAction['refresh'] = true;
+                            } else {
+                                followUpAction['message'] = 'Detonating the trap was unsuccessful.';
                             }
                         }
                         break;
