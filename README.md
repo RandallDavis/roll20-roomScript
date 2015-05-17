@@ -1,4 +1,7 @@
 # roll20-roomScript
+
+### *Note: This project has been absorbed into a more sophisticated script found at: https://github.com/RandallDavis/roll20-areaMapper*
+
 With this, you can import any image and declare it a "room". Rooms can be quickly customized to draw dynamic lighting around them, including doors that can be toggled. A closed door blocks line of sight - an open door lets line of sight through but not through the surrounding walls.
 
 Adhoc walls and doors can be used to piece together more complex rooms.
